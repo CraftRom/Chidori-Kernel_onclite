@@ -79,34 +79,25 @@ int fscrypt_ioctl_set_policy(struct file *filp, const void __user *arg)
 
 	inode_lock(inode);
 
-	ret = inode->i_sb->s_cop->get_context(inode, &ctx, sizeof(ctx));
-	if (ret == -ENODATA) {
+		if (!inode_has_encryption_context(inode)) {
 		if (!S_ISDIR(inode->i_mode))
 			ret = -ENOTDIR;
 		else if (IS_DEADDIR(inode))
 			ret = -ENOENT;
+		else if (!inode->i_sb->s_cop->empty_dir)
+			ret = -EOPNOTSUPP;
 		else if (!inode->i_sb->s_cop->empty_dir(inode))
 			ret = -ENOTEMPTY;
 		else
 			ret = create_encryption_context_from_policy(inode,
 								    &policy);
-<<<<<<< HEAD
-	} else if (ret == sizeof(ctx) &&
-		   is_encryption_context_consistent_with_policy(&ctx,
-								&policy)) {
-		/* The file already uses the same encryption policy. */
-		ret = 0;
-	} else if (ret >= 0 || ret == -ERANGE) {
-		/* The file already uses a different encryption policy. */
-		ret = -EEXIST;
-=======
 	} else if (!is_encryption_context_consistent_with_policy(inode,
 								 &policy)) {
 		printk(KERN_WARNING
 		       "%s: Policy inconsistent with encryption context\n",
 		       __func__);
 		ret = -EINVAL;
->>>>>>> 3326d00ca023c... fscrypto: move ioctl processing more fully into common code
+		ret = -EEXIST;
 	}
 
 	inode_unlock(inode);
