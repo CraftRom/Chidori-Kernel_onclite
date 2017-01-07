@@ -57,6 +57,8 @@
 #define WLAN_HO_CFG_FILE           "wlan/wlan_ho_config"
 #endif // MSM_PLATFORM
 
+#define WLAN_MAC_FILE              "wlan/prima/wlan_mac.bin"
+
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0))
 #undef WLAN_NV_FILE
 #define WLAN_NV_FILE hdd_get_nv_bin()
