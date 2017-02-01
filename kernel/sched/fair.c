@@ -22,6 +22,8 @@
  */
 
 #include <linux/sched.h>
+#include <linux/sched/topology.h>
+
 #include <linux/latencytop.h>
 #include <linux/cpumask.h>
 #include <linux/cpuidle.h>
