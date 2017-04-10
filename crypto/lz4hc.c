@@ -54,7 +54,7 @@ static int lz4hc_compress_crypto(struct crypto_tfm *tfm, const u8 *src,
 
 	err = lz4hc_compress(src, slen, dst, &tmp_len, ctx->lz4hc_comp_mem);
 
-	if (err < 0)
+	if (out_len < 0)
 		return -EINVAL;
 
 	*dlen = tmp_len;
