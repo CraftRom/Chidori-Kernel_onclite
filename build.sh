@@ -106,7 +106,7 @@ cd $ZIP_DIR
 cp $KERN_IMG zImage
 cp $OUTDIR/arch/arm64/boot/dtbo.img $ZIP_DIR
 make normal &>/dev/null
-echo -e "$grn \n(i)          Completed build$nocol $red$((SECONDS / 60))$nocol $grn minute(s) and $nocol $red $((SECONDS % 60))$nocol second(s) !$nocol"
-echo -e "$blue    \nFlashable zip generated under $yellow$ZIP_DIR.\n $nocol"
+echo -e "$grn \n(i)          Completed build$nocol $red$((SECONDS / 60))$nocol $grn minute(s) and$nocol $red$((SECONDS % 60))$nocol $grn second(s) !$nocol"
+echo -e "$blue    \n             Flashable zip generated under $yellow$ZIP_DIR.\n $nocol"
 cd ..
 # Build end

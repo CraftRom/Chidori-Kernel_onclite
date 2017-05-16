@@ -15,7 +15,7 @@ git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/
 
 
 # Clone AnyKernel3
-git clone https://github.com/CraftRom/AnyKernel3 -b android-11
+git clone https://github.com/CraftRom/AnyKernel3 -b onclite
 
 # Download Clang
 if [ ! -d ~/toolchains/proton-clang ]; then
