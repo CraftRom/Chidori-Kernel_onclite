@@ -91,6 +91,7 @@ tune-$(CONFIG_ARCH_MSM8953)	:= -mtune=cortex-a53
 arch-$(CONFIG_ARCH_SDM450)	:= $(call cc-option,-mcpu=cortex-a53+crc+crypto,-march=armv8-a+crc+crypto)
 tune-$(CONFIG_ARCH_SDM450)	:= -mtune=cortex-a53
 
+
 KBUILD_CFLAGS	+= $(arch-y) $(tune-y)
 KBUILD_AFLAGS	+= $(arch-y) $(tune-y)
 
