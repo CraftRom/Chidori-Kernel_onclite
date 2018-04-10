@@ -166,9 +166,6 @@ void __init proc_root_init(void)
 	int err;
 
 	proc_init_inodecache();
-	err = register_filesystem(&proc_fs_type);
-	if (err)
-		return;
 
 	proc_self_init();
 	proc_thread_self_init();
@@ -186,6 +183,8 @@ void __init proc_root_init(void)
 	proc_tty_init();
 	proc_mkdir("bus", NULL);
 	proc_sys_init();
+
+	register_filesystem(&proc_fs_type);
 }
 
 static int proc_root_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat
