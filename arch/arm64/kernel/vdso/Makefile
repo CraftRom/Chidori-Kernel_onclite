@@ -26,6 +26,7 @@ CFLAGS_vgettimeofday.o = -O2 -fPIC
 ifneq ($(cc-name),clang)
 CFLAGS_vgettimeofday.o += -mcmodel=tiny
 endif
+CFLAGS_REMOVE_vgettimeofday.o += $(CC_FLAGS_SCS)
 
 # Disable gcov profiling for VDSO code
 GCOV_PROFILE := n
