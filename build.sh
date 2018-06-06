@@ -66,7 +66,7 @@ regen() {
     make -j$(nproc) O=out ARCH=arm64 "$DEFCONFIG"
 
     cp out/.config "arch/arm64/configs/$DEFCONFIG"
-	sed -i '52s/.*/CONFIG_LOCALVERSION="-Chidori-Kernel"/' "arch/arm64/configs/$DEFCONFIG"
+	sed -i '51s/.*/CONFIG_LOCALVERSION="-Chidori-Kernel"/' "arch/arm64/configs/$DEFCONFIG"
 	git commit -am 'defconfig: onclite: Regenerate' --signoff
 	echo -e "${GREEN}Regened defconfig successfully!\n ${NOCOLOR}"
 	make clean
@@ -160,7 +160,7 @@ TC_DIR="$HOME/toolchains/clang-greenforce"
 DEFCONFIG="onclite-perf_defconfig"
 
 # Set kernel name in config file
-sed -i "52s/.*/CONFIG_LOCALVERSION=\"-$KERNEL_NAME\"/g" arch/arm64/configs/$DEFCONFIG
+sed -i "51s/.*/CONFIG_LOCALVERSION=\"-$KERNEL_NAME\"/g" arch/arm64/configs/$DEFCONFIG
 
 # Set environment variables
 export PATH="$TC_DIR/bin:$PATH"
@@ -292,7 +292,7 @@ New update available!
     fi
 
     # Remove the "-experimental" from the kernel config file
-    sed -i "52s/-experimental//" arch/arm64/configs/$DEFCONFIG
+    sed -i "51s/-experimental//" arch/arm64/configs/$DEFCONFIG
 
     # Output the completion message
     echo -e "${GREEN}\n(i) Completed build in $((SECONDS / 60)) minute(s) and $((SECONDS % 60)) second(s)!\n${NOCOLOR}"
