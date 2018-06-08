@@ -291,6 +291,7 @@ cmd_record_mcount =						\
 	     "$(CC_FLAGS_FTRACE)" ]; then			\
 		$(sub_cmd_record_mcount)			\
 	fi;
+endif # -record-mcount
 endif
 endif # CONFIG_FTRACE_MCOUNT_RECORD
 
@@ -320,7 +321,6 @@ ifdef CONFIG_MODVERSIONS
 objtool_o = $(@D)/.tmp_$(@F)
 else
 objtool_o = $(@)
-endif
 endif
 
 # 'OBJECT_FILES_NON_STANDARD := y': skip objtool checking for a directory
