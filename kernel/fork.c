@@ -347,7 +347,6 @@ void put_task_stack(struct task_struct *tsk)
 void free_task(struct task_struct *tsk)
 {
 	scs_release(tsk);
-	cpufreq_task_times_exit(tsk);
 
 #ifndef CONFIG_THREAD_INFO_IN_TASK
 	/*
@@ -361,6 +360,9 @@ void free_task(struct task_struct *tsk)
 	 * by now.
 	 */
 	WARN_ON_ONCE(atomic_read(&tsk->stack_refcount) != 0);
+#endif
+#ifdef CONFIG_CPU_FREQ_STAT
+	cpufreq_task_times_exit(tsk);
 #endif
 	rt_mutex_debug_task_free(tsk);
 	ftrace_graph_exit_task(tsk);
