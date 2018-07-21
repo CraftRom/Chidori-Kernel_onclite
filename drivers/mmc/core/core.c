@@ -4899,6 +4899,7 @@ unregister_host_class:
 	mmc_unregister_host_class();
 unregister_bus:
 	mmc_unregister_bus();
+
 	return ret;
 }
 
