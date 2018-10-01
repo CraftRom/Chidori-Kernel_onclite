@@ -559,8 +559,9 @@ fail:
 }
 
 #ifdef CONFIG_CPU_VOLTAGE_TABLE
- #define CPU_VDD_MIN	 500
-#define CPU_VDD_MAX	880
+#define CPU_VDD_MIN	 600
+#define CPU_VDD_MAX	1450
+
  extern bool is_used_by_scaling(unsigned int freq);
  ssize_t show_UV_mV_table(struct cpufreq_policy *policy, char *buf)
 {
