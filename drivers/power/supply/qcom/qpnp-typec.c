@@ -51,9 +51,11 @@
 
 #define TYPEC_SW_CTL_REG(base)		(base + 0x52)
 
+/* only support USB2.0, so set default mode current to 900mA */
 #define TYPEC_STD_MA			900
 #define TYPEC_MED_MA			1500
-#define TYPEC_HIGH_MA			3000
+/* set TYPEC_HIGH_MA from 3A to 1.5A for more safety */
+#define TYPEC_HIGH_MA			1500
 
 #define QPNP_TYPEC_DEV_NAME	"qcom,qpnp-typec"
 #define TYPEC_PSY_NAME		"typec"
