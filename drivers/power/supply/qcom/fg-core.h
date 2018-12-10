@@ -523,6 +523,7 @@ struct fg_chip {
 	struct alarm		esr_filter_alarm;
 	struct fg_saved_data	saved_data[POWER_SUPPLY_PROP_MAX];
 	ktime_t			last_delta_temp_time;
+	struct fg_saved_data	saved_data[POWER_SUPPLY_PROP_MAX];
 };
 
 /* Debugfs data structures are below */
