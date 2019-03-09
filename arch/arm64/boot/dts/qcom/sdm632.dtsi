@@ -22,7 +22,7 @@
 	qcom,msm-name = "SDM632";
 
 	chosen {
-		bootargs = "kpti=0 noirqdebug rcu_nocbs=0-7 cgroup.memory=nokmem,nosocket";
+		bootargs = "kpti=0 noirqdebug rcu_nocbs=0-7 cgroup.memory=nokmem,nosocket cpuidle_sysfs_switch";
 	};
 };
 
