@@ -4019,7 +4019,11 @@ static void *ipc_router_create_log_ctx(char *name)
 {
 	struct ipc_rtr_log_ctx *sub_log_ctx;
 
-	sub_log_ctx = kmalloc(sizeof(*sub_log_ctx), GFP_KERNEL);
+	if (!IS_ENABLED(CONFIG_IPC_LOGGING))
+		return NULL;
+
+	sub_log_ctx = kmalloc(sizeof(struct ipc_rtr_log_ctx),
+				GFP_KERNEL);
 	if (!sub_log_ctx)
 		return NULL;
 	sub_log_ctx->log_ctx = ipc_log_context_create(
