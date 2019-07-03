@@ -1014,7 +1014,6 @@ static void sugov_stop(struct cpufreq_policy *policy)
 static void sugov_limits(struct cpufreq_policy *policy)
 {
 	struct sugov_policy *sg_policy = policy->governor_data;
-	unsigned long flags;
 	unsigned int ret;
 	int cpu;
 
@@ -1027,14 +1026,12 @@ static void sugov_limits(struct cpufreq_policy *policy)
 		cpufreq_policy_apply_limits(policy);
 		mutex_unlock(&sg_policy->work_lock);
 	} else {
-		raw_spin_lock_irqsave(&sg_policy->update_lock, flags);
 		ret = cpufreq_policy_apply_limits_fast(policy);
 		if (ret && policy->cur != ret) {
 			policy->cur = ret;
 			for_each_cpu(cpu, policy->cpus)
 				trace_cpu_frequency(ret, cpu);
 		}
-		raw_spin_unlock_irqrestore(&sg_policy->update_lock, flags);
 	}
 
 	sg_policy->limits_changed = true;
