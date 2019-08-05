@@ -1,0 +1,22 @@
+[0;34m--   Make DefConfig
+ [0m
+make[1]: Entering directory '/home/melles1991/craftrom/kernel/android_kernel_xiaomi_onclite/out'
+  GEN     ./Makefile
+#
+# configuration written to .config
+#
+make[1]: Leaving directory '/home/melles1991/craftrom/kernel/android_kernel_xiaomi_onclite/out'
+[nightly_a13 ed51cb991089] defconfig: onclite: Regenerate
+ 3 files changed, 334 insertions(+), 266 deletions(-)
+ rewrite build.sh (79%)
+[0;32mRegened defconfig successfully!
+ [0m
+[0;32mCleaning was successful successfully!
+ [0m
+Press enter to continue 
+ 
+[0;34m░▐█▀█░▐█░▐█░▐██░▐█▀█▄▒▐█▀▀█▌▒▐█▀▀▄░▐██
+░▐█──░▐████─░█▌░▐█▌▐█▒▐█▄▒█▌▒▐█▒▐█─░█▌
+░▐█▄█░▐█░▐█░▐██░▐█▄█▀▒▐██▄█▌▒▐█▀▄▄░▐██[0m
+ 
+-bash: TYPE: unbound variable
