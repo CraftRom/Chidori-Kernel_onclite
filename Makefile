@@ -737,6 +737,8 @@ LLVM_DIS	:= llvm-dis
 # Set O3 optimization level for LTO
 LDFLAGS		+= --plugin-opt=O3
 export LLVM_AR LLVM_DIS
+# Set O3 optimization level for LTO
+LDFLAGS		+= --plugin-opt=O3
 endif
 
 ifdef CONFIG_LTO_GCC
