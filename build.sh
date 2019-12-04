@@ -192,7 +192,6 @@ mkdir -p "${KDIR}"/out/modules
 make O=out ARCH=arm64 CC="ccache clang" LD="ccache ld.lld" AS=llvm-as AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu- modules_prepare
 make -j$(nproc --all) O=out ARCH=arm64 CC="ccache clang" LD="ccache ld.lld" AS=llvm-as AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu- modules INSTALL_MOD_PATH="${KDIR}"/out/modules
 make O=out ARCH=arm64 CC="ccache clang" LD="ccache ld.lld" AS=llvm-as AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu- modules_install INSTALL_MOD_PATH="${KDIR}"/out/modules
-find "${KDIR}"/out/modules -type f -iname '*.ko' -exec cp {} AnyKernel3/modules/system/lib/modules/ \;
 
 kernel="out/arch/arm64/boot/Image.gz-dtb"
 dtbo="out/arch/arm64/boot/dtbo.img"
@@ -207,6 +206,8 @@ if [ -f "$kernel" ] && [ -f "$dtbo" ]; then
 	fi
 
 	cp $kernel $dtbo AnyKernel3
+	mkdir -p "${KDIR}"/AnyKernel3/modules/system/lib/modules
+	find "${KDIR}"/out/modules -type f -iname '*.ko' -exec cp {} "${KDIR}"/AnyKernel3/modules/system/lib/modules/ \;
 	rm -f *zip
 	cd AnyKernel3
 	echo -e "$blue    \nCreating ZIP: $ZIPNAME.zip.zip\n $nocol"
