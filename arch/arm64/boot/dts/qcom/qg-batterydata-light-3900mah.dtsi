@@ -9,10 +9,10 @@ qcom,light_3900mah {
     qcom,battery-type = "light_4000mAh";
     qcom,qg-batt-profile-ver = <100>;
 
-	qcom,jeita-fcc-ranges = <0   50  390000
-				51  150  1170000
+	qcom,jeita-fcc-ranges = <0   50  890000
+				51  150  1670000
 				151 450  2500000
-				451 600  1950000>;
+				451 600  2450000>;
 	qcom,jeita-fv-ranges = <0   50  4400000
 				51  150  4400000
 				151 450  4400000
