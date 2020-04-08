@@ -553,14 +553,20 @@ CLANG_FLAGS	+= -Werror=unknown-warning-option
 CLANG_FLAGS	+= $(call cc-option, -Wno-misleading-indentation)
 CLANG_FLAGS	+= $(call cc-option, -Wno-bool-operation)
 KBUILD_CFLAGS	+= $(CLANG_FLAGS)
-KBUILD_AFLAGS	+= $(CLANG_FLAGS)
-else
 
 KBUILD_CFLAGS += $(call cc-option,-fno-delete-null-pointer-checks,)
 # These warnings generated too much noise in a regular build.
 # Use make W=1 to enable them (see scripts/Makefile.build)
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-const-variable)
+
+ifneq ($(LLVM_IAS),1)
+KBUILD_AFLAGS	+= $(CLANG_FLAGS) -no-integrated-as
+endif
+ifeq ($(ld-name),lld)
+KBUILD_CFLAGS	+= -fuse-ld=lld
+endif
+KBUILD_CPPFLAGS += -Qunused-arguments
 endif
 
 
