@@ -1,3 +1,4 @@
+
 /*
  * Completely Fair Scheduling (CFS) Class (SCHED_NORMAL/SCHED_BATCH)
  *
@@ -7089,7 +7090,7 @@ retry:
 			 * accounting. However, the blocked utilization may be zero.
 			 */
 			wake_util = cpu_util_wake(i, p);
-			new_util = wake_util + task_util(p);
+			new_util = wake_util + boosted_task_util(p);
 			spare_cap = capacity_orig_of(i) - wake_util;
 
 			if (spare_cap > most_spare_cap) {
