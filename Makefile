@@ -776,6 +776,14 @@ include arch/$(SRCARCH)/Makefile
 
 ifeq ($(CONFIG_ARCH_MSM8953), y)
 KBUILD_CFLAGS	+= -march=armv8-a+crypto+crc -mtune=cortex-a53 -mcpu=cortex-a53+crypto+crc
+CLANG_FLAGS	+= -no-integrated-as
+CLANG_FLAGS	+= -Werror=unknown-warning-option
+KBUILD_CFLAGS	+= $(CLANG_FLAGS)
+KBUILD_AFLAGS	+= $(CLANG_FLAGS)
+ifeq ($(ld-name),lld)
+KBUILD_CFLAGS	+= -fuse-ld=lld
+endif
+export CLANG_FLAGS
 endif
 
 ifdef CONFIG_LLVM_POLLY
