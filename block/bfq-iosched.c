@@ -4955,10 +4955,10 @@ static int bfq_init_queue(struct request_queue *q, struct elevator_type *e)
 	/*
 	 * Trade-off between responsiveness and fairness.
 	 */
-	bfqd->bfq_wr_coeff = 900;
-	bfqd->bfq_wr_rt_max_time = msecs_to_jiffies(3600);
+	bfqd->bfq_wr_coeff = 30;
+	bfqd->bfq_wr_rt_max_time = msecs_to_jiffies(300);
 	bfqd->bfq_wr_max_time = 0;
-	bfqd->bfq_wr_min_idle_time = msecs_to_jiffies(1200);
+	bfqd->bfq_wr_min_idle_time = msecs_to_jiffies(2000);
 	bfqd->bfq_wr_min_inter_arr_async = msecs_to_jiffies(500);
 	bfqd->bfq_wr_max_softrt_rate = 7000; /*
 					      * Approximate rate required
@@ -5026,7 +5026,48 @@ static ssize_t bfq_wr_max_time_show(struct elevator_queue *e, char *page)
 }
 
 #ifdef CONFIG_BFQ_EXPORT_WEIGHTS
-static ssize_t bfq_weights_show(struct elevator_queue *e, char *page){}
+static ssize_t bfq_weights_show(struct elevator_queue *e, char *page)
+{
+	struct bfq_queue *bfqq;
+	struct bfq_data *bfqd = e->elevator_data;
+	ssize_t num_char = 0;
+
+	num_char += sprintf(page + num_char, "Tot reqs queued %d\n\n",
+			    bfqd->queued);
+
+	spin_lock_irq(bfqd->queue->queue_lock);
+
+	num_char += sprintf(page + num_char, "Active:\n");
+	list_for_each_entry(bfqq, &bfqd->active_list, bfqq_list) {
+		num_char += sprintf(page + num_char,
+				    "pid%d: weight %hu, nr_queued %d %d, ",
+				    bfqq->pid,
+				    bfqq->entity.weight,
+				    bfqq->queued[0],
+				    bfqq->queued[1]);
+		num_char += sprintf(page + num_char,
+				    "dur %d/%u\n",
+				    jiffies_to_msecs(
+					    jiffies -
+					    bfqq->last_wr_start_finish),
+				    jiffies_to_msecs(bfqq->wr_cur_max_time));
+	}
+
+	num_char += sprintf(page + num_char, "Idle:\n");
+	list_for_each_entry(bfqq, &bfqd->idle_list, bfqq_list) {
+		num_char += sprintf(page + num_char,
+				    "pid%d: weight %hu, dur %d/%u\n",
+				    bfqq->pid,
+				    bfqq->entity.weight,
+				    jiffies_to_msecs(jiffies -
+						     bfqq->last_wr_start_finish),
+				    jiffies_to_msecs(bfqq->wr_cur_max_time));
+	}
+
+	spin_unlock_irq(bfqd->queue->queue_lock);
+
+	return num_char;
+}
 #endif
 
 #define SHOW_FUNCTION(__FUNC, __VAR, __CONV)				\

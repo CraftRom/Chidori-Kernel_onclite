@@ -1,6 +1,6 @@
 /************************************************************************
 * Copyright (C) 2012-2018, Focaltech Systems (R)£¬All Rights Reserved.
-* Copyright (C) 2020 XiaoMi, Inc.
+* Copyright (C) 2019 XiaoMi, Inc.
 *
 * File Name: focaltech_test.h
 *
@@ -23,7 +23,7 @@
 #include <linux/slab.h>
 #include <linux/debugfs.h>
 #include <asm/uaccess.h>
-#include <linux/i2c.h>//iic
+#include <linux/i2c.h>
 #include <linux/delay.h>//msleep
 #include <linux/string.h>
 #include <asm/unistd.h>
@@ -207,17 +207,17 @@ struct test_item {
  * screen_param - test basic parameter: tx/rx/key num...
  */
 struct fts_test_data {
-    int test_num;                                           // test item num
-    char *store_all_data;                                      // store all data in  testdata.csv
-    char *tmp_buffer;                                            // store temp buff in testdata.csv
-    char *store_msg_area;                                    // store message  in testdata.csv
-    int len_store_msg_area;                                      // store message len in testdata.csv
-    char *msg_area_line2;                                    // strore second line in testdata.csv
-    int len_msg_area_line2;                                      //strore second line len in testdata.csv
-    char *store_data_area;                                     // store data  in testdata.csv
-    int len_store_data_area;                                     // store data len in testdata.csv
-    u8 test_item_code;                        //TestItemCode in testdata.csv
-    int start_line;                                               //The Start Line of Data Area
+    int test_num;
+    char *store_all_data;
+    char *tmp_buffer;
+    char *store_msg_area;
+    int len_store_msg_area;
+    char *msg_area_line2;
+    int len_msg_area_line2;
+    char *store_data_area;
+    int len_store_data_area;
+    u8 test_item_code;
+    int start_line;
     int test_data_count;                                       // test data count in testdata.csv
     char *testresult;
     int testresult_len;
@@ -230,8 +230,8 @@ struct fts_test_data {
     struct test_funcs *func;
     struct test_item test_item[MAX_TEST_ITEM];
     struct screen_setting screen_param;
-    struct detailthreshold_mcap mcap_detail_thr;  // detailthreshold of MCap
-    struct detailthreshold_scap scap_detail_thr;   // detailthreshold of SCap
+    struct detailthreshold_mcap mcap_detail_thr;
+    struct detailthreshold_scap scap_detail_thr;
     struct detailthreshold_incell incell_detail_thr;   // detailthreshold of Incell
 };
 
