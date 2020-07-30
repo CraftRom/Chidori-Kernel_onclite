@@ -3,7 +3,7 @@
  * FocalTech TouchScreen driver.
  *
  * Copyright (c) 2012-2018, FocalTech Systems, Ltd., all rights reserved.
- * Copyright (C) 2020 XiaoMi, Inc.
+ * Copyright (C) 2019 XiaoMi, Inc.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -485,7 +485,7 @@ int wait_state_update(void)
 			break;
 		else
 			FTS_TEST_DBG("reg%x=%x,retry:%d", \
-						 FACTORY_REG_PARAM_UPDATE_STATE, state, times);
+					     FACTORY_REG_PARAM_UPDATE_STATE, state, times);
 	}
 
 	if (times >= FACTORY_TEST_RETRY) {
@@ -648,7 +648,7 @@ int weakshort_get_adc_data_incell(u8 retval, u8 ch_num, int byte_num, int *adc_b
 			break;
 		else
 			FTS_TEST_DBG("reg%x=%x,retry:%d",
-						 FACTORY_REG_SHORT_TEST_STATE, short_state, times);
+					     FACTORY_REG_SHORT_TEST_STATE, short_state, times);
 
 		sys_delay(FACTORY_TEST_RETRY_DELAY);
 	}
@@ -721,7 +721,7 @@ bool compare_data_incell(int *data, int min, int max, int vk_min, int vk_max, bo
 				tmp_result = false;
 				FTS_TEST_SAVE_INFO("test failure. Node=(%d, %d), \
 					Get_value=%d,  Set_Range=(%d, %d)\n", \
-						           row + 1, col + 1, value, min, max);
+					               row + 1, col + 1, value, min, max);
 			}
 		}
 	}
@@ -739,7 +739,7 @@ bool compare_data_incell(int *data, int min, int max, int vk_min, int vk_max, bo
 				tmp_result = false;
 				FTS_TEST_SAVE_INFO("test failure. Node=(%d, %d), \
 					Get_value=%d,  Set_Range=(%d, %d)\n", \
-						           row + 1, col + 1, value, vk_min, vk_max);
+					               row + 1, col + 1, value, vk_min, vk_max);
 			}
 		}
 	}
@@ -774,7 +774,7 @@ bool compare_detailthreshold_data_incell(int *data, int *data_min, int *data_max
 			if (value < tmp_min || value > tmp_max) {
 				tmp_result = false;
 				FTS_TEST_SAVE_INFO(" \n test failure. Node=(%d,  %d), Get_value=%d,  Set_Range=(%d, %d)", \
-						           row + 1, col + 1, value, tmp_min, tmp_max);
+					               row + 1, col + 1, value, tmp_min, tmp_max);
 			}
 		}
 	}
@@ -792,7 +792,7 @@ bool compare_detailthreshold_data_incell(int *data, int *data_min, int *data_max
 			if (value < tmp_min || value > tmp_max) {
 				tmp_result = false;
 				FTS_TEST_SAVE_INFO(" \n test failure. Node=(%d,  %d), Get_value=%d,  Set_Range=(%d, %d)", \
-						           row + 1, col + 1, value, tmp_min, tmp_max);
+					               row + 1, col + 1, value, tmp_min, tmp_max);
 			}
 		}
 	}
@@ -828,10 +828,10 @@ void save_testdata_incell(int *data, char *test_num, int index, u8 row, u8 col, 
 			if (j == (col - 1)) {
 				/* The Last Data of the row, add "\n" */
 				len = snprintf(test_data.tmp_buffer, BUFF_LEN_TMP_BUFFER, \
-						       "%d, \n", data[col * (i + index) + j]);
+					           "%d, \n", data[col * (i + index) + j]);
 			} else {
 				len = snprintf(test_data.tmp_buffer, BUFF_LEN_TMP_BUFFER, \
-						       "%d, ", data[col * (i + index) + j]);
+					           "%d, ", data[col * (i + index) + j]);
 			}
 
 			memcpy(test_data.store_data_area + test_data.len_store_data_area, test_data.tmp_buffer, len);
@@ -1429,22 +1429,22 @@ static ssize_t proc_tp_selftest_write(struct file *file, const char __user *buff
 
 	disable_irq(client->irq);
 
-   #if defined(FTS_ESDCHECK_EN) && (FTS_ESDCHECK_EN)
-	   fts_esdcheck_switch(DISABLE);
-   #endif
-	 ret =  fts_test_entry(fwname);
-	 if (ret < 0){
-		 writeInfo = "0";
-	 }
+	#if defined(FTS_ESDCHECK_EN) && (FTS_ESDCHECK_EN)
+	fts_esdcheck_switch(DISABLE);
+	#endif
+	ret =  fts_test_entry(fwname);
+	if (ret < 0){
+		writeInfo = "0";
+	}
 
-   #if defined(FTS_ESDCHECK_EN) && (FTS_ESDCHECK_EN)
-	   fts_esdcheck_switch(ENABLE);
-   #endif
-	   enable_irq(client->irq);
+	#if defined(FTS_ESDCHECK_EN) && (FTS_ESDCHECK_EN)
+	fts_esdcheck_switch(ENABLE);
+	#endif
+	enable_irq(client->irq);
 
-   mutex_unlock(&input_dev->mutex);
+	mutex_unlock(&input_dev->mutex);
 
-   FTS_TEST_FUNC_EXIT();
+	FTS_TEST_FUNC_EXIT();
 	return count;
 }
 

@@ -3,7 +3,7 @@
  * FocalTech TouchScreen driver.
  *
  * Copyright (c) 2012-2018, Focaltech Ltd. All rights reserved.
- * Copyright (C) 2020 XiaoMi, Inc.
+ * Copyright (C) 2019 XiaoMi, Inc.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -18,7 +18,7 @@
 
 /*****************************************************************************
 *
-* File Name: focaltech_gestrue.c
+* File Name: focaltech_GESTURE.c
 *
 * Author: Focaltech Driver Team
 *
@@ -67,8 +67,10 @@
 #define GESTURE_V                               0x54
 #define GESTURE_Z                               0x41
 #define GESTURE_C                               0x34
-#define FTS_GESTRUE_POINTS                      255
-#define FTS_GESTRUE_POINTS_HEADER               8
+#define FTS_GESTURE_POINTS                      255
+#define FTS_GESTURE_POINTS_HEADER               8
+#define WAKEUP_OFF                              0x04
+#define WAKEUP_ON                               0x05
 
 /*****************************************************************************
 * Private enumerations, structures and unions using typedef
@@ -85,9 +87,9 @@
 *                   0:gesture disable or resume
 */
 struct fts_gesture_st {
-	u8 header[FTS_GESTRUE_POINTS_HEADER];
-	u16 coordinate_x[FTS_GESTRUE_POINTS];
-	u16 coordinate_y[FTS_GESTRUE_POINTS];
+	u8 header[FTS_GESTURE_POINTS_HEADER];
+	u16 coordinate_x[FTS_GESTURE_POINTS];
+	u16 coordinate_y[FTS_GESTURE_POINTS];
 	u8 mode;   /*host driver enable gesture flag*/
 	u8 active;  /*gesture actutally work*/
 };
@@ -110,24 +112,52 @@ static ssize_t fts_gesture_buf_show(struct device *dev, struct device_attribute 
 static ssize_t fts_gesture_buf_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
 
 /* sysfs gesture node
- *   read example: cat  fts_gesture_mode        ---read gesture mode
- *   write example:echo 01 > fts_gesture_mode   ---write gesture mode to 01
+ *   read example: cat  wakeup_gesture        ---read gesture mode
+ *   write example:echo 01 > wakeup_gesture   ---write gesture mode to 01
  *
  */
-static DEVICE_ATTR (fts_gesture_mode, S_IRUGO | S_IWUSR, fts_gesture_show, fts_gesture_store);
+static DEVICE_ATTR (wakeup_gesture, S_IRUGO | S_IWUSR, fts_gesture_show, fts_gesture_store);
 /*
- *   read example: cat fts_gesture_buf        ---read gesture buf
+ *   read example: cat wakeup_gesture_buf        ---read gesture buf
  */
-static DEVICE_ATTR (fts_gesture_buf, S_IRUGO | S_IWUSR, fts_gesture_buf_show, fts_gesture_buf_store);
-static struct attribute *fts_gesture_mode_attrs[] = {
-	&dev_attr_fts_gesture_mode.attr,
-	&dev_attr_fts_gesture_buf.attr,
+static DEVICE_ATTR (wakeup_gesture_buf, S_IRUGO | S_IWUSR, fts_gesture_buf_show, fts_gesture_buf_store);
+static struct attribute *wakeup_gesture_attrs[] = {
+	&dev_attr_wakeup_gesture.attr,
+	&dev_attr_wakeup_gesture_buf.attr,
 	NULL,
 };
 
 static struct attribute_group fts_gesture_group = {
-	.attrs = fts_gesture_mode_attrs,
+	.attrs = wakeup_gesture_attrs,
 };
+
+/************************************************************************
+ * Name: fts_input_symlink
+ *  Brief:
+ *  Input:
+ * Output:
+ * Return: 0-success or others-error
+***********************************************************************/
+static ssize_t fts_input_symlink(struct i2c_client *client)
+{
+	char *driver_path;
+	int ret = 0;
+
+ 	driver_path = kzalloc(PATH_MAX, GFP_KERNEL);
+	if (!driver_path) {
+		return -ENOMEM;
+	}
+
+ 	sprintf(driver_path, "/sys%s",
+			kobject_get_path(&client->dev.kobj, GFP_KERNEL));
+
+ 	pr_info("%s: driver_path=%s\n", __func__, driver_path);
+	proc_symlink("touchpanel", NULL, driver_path);
+
+ 	kfree(driver_path);
+
+ 	return ret;
+}
 
 /************************************************************************
 * Name: fts_gesture_show
@@ -165,38 +195,15 @@ static ssize_t fts_gesture_store(struct device *dev, struct device_attribute *at
 	mutex_lock(&input_dev->mutex);
 	if (FTS_SYSFS_ECHO_ON(buf)) {
 		FTS_INFO("[GESTURE]enable gesture");
-		fts_gesture_data.mode = ENABLE;
+		fts_gesture_data.mode = 1;
 	} else if (FTS_SYSFS_ECHO_OFF(buf)) {
 		FTS_INFO("[GESTURE]disable gesture");
-		fts_gesture_data.mode = DISABLE;
+		fts_gesture_data.mode = 0;
 	}
 	mutex_unlock(&input_dev->mutex);
 
 	return count;
 }
-
-/*fts select gesture mode  add by qujiong 21081023*/
-int fts_select_gesture_mode(struct input_dev *dev,unsigned int type,unsigned int code,int value)
-{
-	struct input_dev *input_dev = fts_data->input_dev;
-	FTS_INFO("[GESTURE]enter fts the select gesture func");
-	if((type == EV_SYN )&& (code == SYN_CONFIG))
-	{
-		mutex_lock(&input_dev->mutex);
-		if (value == 5)
-		{
-			FTS_INFO("[GESTURE]enable gesture");
-			fts_gesture_data.mode = ENABLE;
-		}else
-		{
-		    FTS_INFO("[GESTURE]disable gesture");
-			fts_gesture_data.mode = DISABLE;
-		}
-		mutex_unlock(&input_dev->mutex);
-	}
-	return 0;
-}
-
 /************************************************************************
 * Name: fts_gesture_buf_show
 *  Brief:
@@ -250,8 +257,8 @@ int fts_create_gesture_sysfs(struct i2c_client *client)
 	int ret = 0;
 
 	ret = sysfs_create_group(&client->dev.kobj, &fts_gesture_group);
-	if ( ret != 0) {
-		FTS_ERROR( "[GESTURE]fts_gesture_mode_group(sysfs) create failed!");
+	if (ret != 0) {
+		FTS_ERROR("[GESTURE]fts_gesture_mode_group(sysfs) create failed!");
 		sysfs_remove_group(&client->dev.kobj, &fts_gesture_group);
 		return ret;
 	}
@@ -268,7 +275,6 @@ int fts_create_gesture_sysfs(struct i2c_client *client)
 static void fts_gesture_report(struct input_dev *input_dev, int gesture_id)
 {
 	int gesture;
-   
 
 	FTS_FUNC_ENTER();
 	FTS_INFO("fts gesture_id==0x%x ", gesture_id);
@@ -370,10 +376,10 @@ static int fts_gesture_read_buffer(struct i2c_client *client, u8 *buf, int read_
 ***********************************************************************/
 int fts_gesture_readdata(struct fts_ts_data *ts_data)
 {
-	u8 buf[FTS_GESTRUE_POINTS * 4] = { 0 };
+	u8 buf[FTS_GESTURE_POINTS * 4] = { 0 };
 	int ret = 0;
 	int i = 0;
-	int gestrue_id = 0;
+	int GESTURE_id = 0;
 	int read_bytes = 0;
 	u8 pointnum;
 	u8 state;
@@ -391,20 +397,20 @@ int fts_gesture_readdata(struct fts_ts_data *ts_data)
 	}
 
 	/* init variable before read gesture point */
-	memset(fts_gesture_data.header, 0, FTS_GESTRUE_POINTS_HEADER);
-	memset(fts_gesture_data.coordinate_x, 0, FTS_GESTRUE_POINTS * sizeof(u16));
-	memset(fts_gesture_data.coordinate_y, 0, FTS_GESTRUE_POINTS * sizeof(u16));
+	memset(fts_gesture_data.header, 0, FTS_GESTURE_POINTS_HEADER);
+	memset(fts_gesture_data.coordinate_x, 0, FTS_GESTURE_POINTS * sizeof(u16));
+	memset(fts_gesture_data.coordinate_y, 0, FTS_GESTURE_POINTS * sizeof(u16));
 
 	buf[0] = FTS_REG_GESTURE_OUTPUT_ADDRESS;
-	ret = fts_i2c_read(client, buf, 1, buf, FTS_GESTRUE_POINTS_HEADER);
+	ret = fts_i2c_read(client, buf, 1, buf, FTS_GESTURE_POINTS_HEADER);
 	if (ret < 0) {
 		FTS_ERROR("[GESTURE]Read gesture header data failed!!");
 		FTS_FUNC_EXIT();
 		return ret;
 	}
 
-	memcpy(fts_gesture_data.header, buf, FTS_GESTRUE_POINTS_HEADER);
-	gestrue_id = buf[0];
+	memcpy(fts_gesture_data.header, buf, FTS_GESTURE_POINTS_HEADER);
+	GESTURE_id = buf[0];
 	pointnum = buf[1];
 	read_bytes = ((int)pointnum) * 4 + 2;
 	buf[0] = FTS_REG_GESTURE_OUTPUT_ADDRESS;
@@ -416,12 +422,12 @@ int fts_gesture_readdata(struct fts_ts_data *ts_data)
 		return ret;
 	}
 
-	fts_gesture_report(input_dev, gestrue_id);
+	fts_gesture_report(input_dev, GESTURE_id);
 	for (i = 0; i < pointnum; i++) {
 		fts_gesture_data.coordinate_x[i] = (((s16) buf[0 + (4 * i + 2)]) & 0x0F) << 8
-				                           | (((s16) buf[1 + (4 * i + 2)]) & 0xFF);
+										   | (((s16) buf[1 + (4 * i + 2)]) & 0xFF);
 		fts_gesture_data.coordinate_y[i] = (((s16) buf[2 + (4 * i + 2)]) & 0x0F) << 8
-				                           | (((s16) buf[3 + (4 * i + 2)]) & 0xFF);
+										   | (((s16) buf[3 + (4 * i + 2)]) & 0xFF);
 	}
 
 	return 0;
@@ -548,6 +554,28 @@ int fts_gesture_resume(struct i2c_client *client)
 	return 0;
 }
 
+/*
+ * =============================
+ * @Author: 102007757
+ * @Version: 1.0
+ * @DateTime: 2019-1-7
+ * @Purpose: Double click to wake up
+ * =============================
+ */
+int fts_gesture_switch(struct input_dev *dev, unsigned int type, unsigned int code, int value)
+{
+	if (type == EV_SYN && code == SYN_CONFIG) {
+		if (value == WAKEUP_OFF) {
+			fts_gesture_data.mode = DISABLE;
+			FTS_INFO("fts_gesture_data.mode:%d", fts_gesture_data.mode);
+		} else if (value == WAKEUP_ON) {
+			fts_gesture_data.mode = ENABLE;
+			FTS_INFO("fts_gesture_data.mode:%d", fts_gesture_data.mode);
+		}
+	}
+	return 0;
+}
+
 /*****************************************************************************
 *   Name: fts_gesture_init
 *  Brief:
@@ -562,39 +590,42 @@ int fts_gesture_init(struct fts_ts_data *ts_data)
 
 	FTS_FUNC_ENTER();
 	input_set_capability(input_dev, EV_KEY, KEY_WAKEUP);
-	input_set_capability(input_dev, EV_KEY, KEY_WAKEUP);
-	input_set_capability(input_dev, EV_KEY, KEY_WAKEUP);
-	input_set_capability(input_dev, EV_KEY, KEY_WAKEUP);
-	input_set_capability(input_dev, EV_KEY, KEY_WAKEUP);
-	input_set_capability(input_dev, EV_KEY, KEY_WAKEUP);
-	input_set_capability(input_dev, EV_KEY, KEY_WAKEUP);
-	input_set_capability(input_dev, EV_KEY, KEY_WAKEUP);
-	input_set_capability(input_dev, EV_KEY, KEY_WAKEUP);
-	input_set_capability(input_dev, EV_KEY, KEY_WAKEUP);
-	input_set_capability(input_dev, EV_KEY, KEY_WAKEUP);
-	input_set_capability(input_dev, EV_KEY, KEY_WAKEUP);
-	input_set_capability(input_dev, EV_KEY, KEY_WAKEUP);
-	input_set_capability(input_dev, EV_KEY, KEY_WAKEUP);
-	input_set_capability(input_dev, EV_KEY, KEY_WAKEUP);
+	input_set_capability(input_dev, EV_KEY, KEY_GESTURE_U);
+	input_set_capability(input_dev, EV_KEY, KEY_GESTURE_UP);
+	input_set_capability(input_dev, EV_KEY, KEY_GESTURE_DOWN);
+	input_set_capability(input_dev, EV_KEY, KEY_GESTURE_LEFT);
+	input_set_capability(input_dev, EV_KEY, KEY_GESTURE_RIGHT);
+	input_set_capability(input_dev, EV_KEY, KEY_GESTURE_O);
+	input_set_capability(input_dev, EV_KEY, KEY_GESTURE_E);
+	input_set_capability(input_dev, EV_KEY, KEY_GESTURE_M);
+	input_set_capability(input_dev, EV_KEY, KEY_GESTURE_L);
+	input_set_capability(input_dev, EV_KEY, KEY_GESTURE_W);
+	input_set_capability(input_dev, EV_KEY, KEY_GESTURE_S);
+	input_set_capability(input_dev, EV_KEY, KEY_GESTURE_V);
+	input_set_capability(input_dev, EV_KEY, KEY_GESTURE_Z);
+	input_set_capability(input_dev, EV_KEY, KEY_GESTURE_C);
 
-	__set_bit(KEY_WAKEUP, input_dev->keybit);
-	__set_bit(KEY_WAKEUP, input_dev->keybit);
-	__set_bit(KEY_WAKEUP, input_dev->keybit);
-	__set_bit(KEY_WAKEUP, input_dev->keybit);
-	__set_bit(KEY_WAKEUP, input_dev->keybit);
-	__set_bit(KEY_WAKEUP, input_dev->keybit);
-	__set_bit(KEY_WAKEUP, input_dev->keybit);
-	__set_bit(KEY_WAKEUP, input_dev->keybit);
-	__set_bit(KEY_WAKEUP, input_dev->keybit);
-	__set_bit(KEY_WAKEUP, input_dev->keybit);
-	__set_bit(KEY_WAKEUP, input_dev->keybit);
-	__set_bit(KEY_WAKEUP, input_dev->keybit);
-	__set_bit(KEY_WAKEUP, input_dev->keybit);
-	__set_bit(KEY_WAKEUP, input_dev->keybit);
+	__set_bit(KEY_GESTURE_RIGHT, input_dev->keybit);
+	__set_bit(KEY_GESTURE_LEFT, input_dev->keybit);
+	__set_bit(KEY_GESTURE_UP, input_dev->keybit);
+	__set_bit(KEY_GESTURE_DOWN, input_dev->keybit);
+	__set_bit(KEY_GESTURE_U, input_dev->keybit);
+	__set_bit(KEY_GESTURE_O, input_dev->keybit);
+	__set_bit(KEY_GESTURE_E, input_dev->keybit);
+	__set_bit(KEY_GESTURE_M, input_dev->keybit);
+	__set_bit(KEY_GESTURE_W, input_dev->keybit);
+	__set_bit(KEY_GESTURE_L, input_dev->keybit);
+	__set_bit(KEY_GESTURE_S, input_dev->keybit);
+	__set_bit(KEY_GESTURE_V, input_dev->keybit);
+	__set_bit(KEY_GESTURE_C, input_dev->keybit);
+	__set_bit(KEY_GESTURE_Z, input_dev->keybit);
+
+	input_dev->event = fts_gesture_switch;
 
 	fts_create_gesture_sysfs(client);
-	fts_gesture_data.mode = ENABLE;
-	fts_gesture_data.active = DISABLE;
+	fts_input_symlink(client);
+	fts_gesture_data.mode = 0;
+	fts_gesture_data.active = 0;
 
 	FTS_FUNC_EXIT();
 	return 0;
