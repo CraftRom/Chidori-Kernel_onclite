@@ -1,5 +1,6 @@
 /************************************************************************
 * Copyright (C) 2012-2018, Focaltech Systems (R)£¬All Rights Reserved.
+* Copyright (C) 2019 XiaoMi, Inc.
 *
 * File Name: focaltech_test_detail_threshold.h
 *
@@ -35,7 +36,7 @@ struct detailthreshold_incell {
     int *cb_test_max;
 };
 struct detailthreshold_mcap {
-    unsigned char (*invalid_node)[RX_NUM_MAX];// Invalid node, the node is not tested
+    unsigned char (*invalid_node)[RX_NUM_MAX];
     unsigned char (*invalid_node_sc)[RX_NUM_MAX];//Invalid node, the SCAP node is not tested
     int (*rawdata_test_min)[RX_NUM_MAX];
     int (*rawdata_test_max)[RX_NUM_MAX];
@@ -79,7 +80,7 @@ struct detailthreshold_scap {
     int CiDeviationTest_Base[MAX_CHANNEL_NUM];
 
     int NoiseTest_Max[MAX_CHANNEL_NUM];
-    int DeltaCxTest_Sort[MAX_CHANNEL_NUM];         //Sort for 6x06 and 6x36 employed universally
+    int DeltaCxTest_Sort[MAX_CHANNEL_NUM];
     int DeltaCxTest_Area[MAX_CHANNEL_NUM];         //Area for 6x06 and 6x36 employed universally
 
     int cb_test_max[MAX_CHANNEL_NUM];
