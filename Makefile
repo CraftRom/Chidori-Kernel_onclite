@@ -908,6 +908,9 @@ endif
 KBUILD_CFLAGS	+= $(call cc-option, -mno-fix-cortex-a53-835769)
 KBUILD_CFLAGS	+= $(call cc-option, -mno-fix-cortex-a53-843419)
 
+# Tell compiler to use pipes instead of temporary files during compilation
+KBUILD_CFLAGS += $(call cc-option, -pipe)
+
 # Tell gcc to never replace conditional load with a non-conditional one
 KBUILD_CFLAGS	+= $(call cc-option,--param=allow-store-data-races=0)
 KBUILD_CFLAGS	+= $(call cc-option,-fno-allow-store-data-races)
