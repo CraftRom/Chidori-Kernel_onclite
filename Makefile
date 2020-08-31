@@ -816,7 +816,7 @@ ifdef CONFIG_LTO_CLANG
 ifdef CONFIG_THINLTO
 lto-clang-flags	:= -flto=thin
 ifeq ($(ld-name),lld)
-LDFLAGS		+= cache-dir=.thinlto-cache
+LDFLAGS		+= --thinlto-cache-dir=.thinlto-cache
 else
 LDFLAGS		+= --plugin-opt=cache-dir=.thinlto-cache
 endif
