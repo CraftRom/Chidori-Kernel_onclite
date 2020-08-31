@@ -6,7 +6,10 @@ ifeq ($(KERNEL_TARGET),)
 INSTALLED_KERNEL_TARGET := $(PRODUCT_OUT)/kernel
 endif
 
-INSTALLED_KERNEL_VM_TARGET := $(PRODUCT_OUT)/kernel_vm
+ifneq ($(TARGET_KERNEL_APPEND_DTB), true)
+$(info Using DTB Image)
+INSTALLED_DTBIMAGE_TARGET := $(PRODUCT_OUT)/dtb.img
+endif
 
 TARGET_KERNEL_MAKE_ENV := $(strip $(TARGET_KERNEL_MAKE_ENV))
 ifeq ($(TARGET_KERNEL_MAKE_ENV),)
@@ -28,6 +31,10 @@ KERNEL_HEADER_ARCH := $(KERNEL_ARCH)
 else
 $(warning Forcing kernel header generation only for '$(TARGET_KERNEL_HEADER_ARCH)')
 KERNEL_HEADER_ARCH := $(TARGET_KERNEL_HEADER_ARCH)
+endif
+
+ifeq ($(shell echo $(KERNEL_DEFCONFIG) | grep vendor),)
+KERNEL_DEFCONFIG := vendor/$(KERNEL_DEFCONFIG)
 endif
 
 KERNEL_HEADER_DEFCONFIG := $(strip $(KERNEL_HEADER_DEFCONFIG))
@@ -90,16 +97,23 @@ ifeq ($(TARGET_KERNEL),$(current_dir))
     KERNEL_OUT := $(TARGET_OUT_INTERMEDIATES)/kernel/$(TARGET_KERNEL)
     KERNEL_SYMLINK := $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ
     KERNEL_USR := $(KERNEL_SYMLINK)/usr
-    KERNEL_VM_OUT := $(TARGET_OUT_INTERMEDIATES)/kernel_vm/$(TARGET_KERNEL)
-    KERNEL_VM_SYMLINK := $(TARGET_OUT_INTERMEDIATES)/KERNEL_VM_OBJ
-    KERNEL_VM_USR := $(KERNEL_VM_SYMLINK)/usr
 else
     # Legacy style, kernel source directly under kernel
     KERNEL_LEGACY_DIR := true
     BUILD_ROOT_LOC := ../
     TARGET_KERNEL_SOURCE := kernel
     KERNEL_OUT := $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ
-    KERNEL_VM_OUT := $(TARGET_OUT_INTERMEDIATES)/KERNEL_VM_OBJ
+endif
+
+# Add RTIC DTB to dtb.img if RTIC MPGen is enabled.
+# Note: unfortunately we can't define RTIC DTS + DTB rule here as the
+# following variable/ tools (needed for DTS generation)
+# are missing - DTB_OBJS, OBJDUMP, KCONFIG_CONFIG, CC, DTC_FLAGS (the only available is DTC).
+# The existing RTIC kernel integration in scripts/link-vmlinux.sh generates RTIC MP DTS
+# that will be compiled with optional rule below.
+# To be safe, we check for MPGen enable.
+ifdef RTIC_MPGEN
+RTIC_DTB := $(KERNEL_SYMLINK)/rtic_mp.dtb
 endif
 
 KERNEL_CONFIG := $(KERNEL_OUT)/.config
@@ -110,38 +124,27 @@ else
 
 ifeq ($(TARGET_USES_UNCOMPRESSED_KERNEL),true)
 $(info Using uncompressed kernel)
-TARGET_PREBUILT_INT_KERNEL_ := arch/$(KERNEL_ARCH)/boot/Image
+TARGET_PREBUILT_INT_KERNEL := $(KERNEL_OUT)/arch/$(KERNEL_ARCH)/boot/Image
 else
 ifeq ($(KERNEL_ARCH),arm64)
-TARGET_PREBUILT_INT_KERNEL_ := arch/$(KERNEL_ARCH)/boot/Image.gz
+TARGET_PREBUILT_INT_KERNEL := $(KERNEL_OUT)/arch/$(KERNEL_ARCH)/boot/Image.gz
 else
-TARGET_PREBUILT_INT_KERNEL_ := arch/$(KERNEL_ARCH)/boot/zImage
+TARGET_PREBUILT_INT_KERNEL := $(KERNEL_OUT)/arch/$(KERNEL_ARCH)/boot/zImage
 endif
 endif
 
 ifeq ($(TARGET_KERNEL_APPEND_DTB), true)
 $(info Using appended DTB)
-TARGET_PREBUILT_INT_KERNEL_ := $(TARGET_PREBUILT_INT_KERNEL_)-dtb
-else
-$(info Using DTB Image)
-INSTALLED_DTBIMAGE_TARGET := $(PRODUCT_OUT)/dtb.img
+TARGET_PREBUILT_INT_KERNEL := $(TARGET_PREBUILT_INT_KERNEL)-dtb
 endif
-
-# Creating a dtb.img once the kernel is compiled if TARGET_KERNEL_APPEND_DTB is set to be false
-$(INSTALLED_DTBIMAGE_TARGET): $(INSTALLED_KERNEL_TARGET)
-	cat $(KERNEL_OUT)/arch/$(KERNEL_ARCH)/boot/dts/qcom/*.dtb > $@
 
 KERNEL_HEADERS_INSTALL := $(KERNEL_OUT)/usr
 KERNEL_MODULES_INSTALL ?= system
 KERNEL_MODULES_OUT ?= $(PRODUCT_OUT)/$(KERNEL_MODULES_INSTALL)/lib/modules
 
-TARGET_PREBUILT_INT_KERNEL := $(KERNEL_OUT)/$(TARGET_PREBUILT_INT_KERNEL_)
 TARGET_PREBUILT_KERNEL := $(TARGET_PREBUILT_INT_KERNEL)
 
-KERNEL_VM_CONFIG := $(KERNEL_VM_OUT)/.config
-KERNEL_VM_HEADERS_INSTALL := $(KERNEL_VM_OUT)/usr
-TARGET_PREBUILT_INT_KERNEL_VM := $(KERNEL_VM_OUT)/$(TARGET_PREBUILT_INT_KERNEL_)
-TARGET_PREBUILT_KERNEL_VM := $(TARGET_PREBUILT_INT_KERNEL_VM)
+BOARD_VENDOR_KERNEL_MODULES += $(wildcard $(KERNEL_MODULES_OUT)/*.ko)
 
 define mv-modules
 mdpath=`find $(KERNEL_MODULES_OUT) -type f -name modules.dep`;\
@@ -159,49 +162,12 @@ mpath=`dirname $$mdpath`; rm -rf $$mpath;\
 fi
 endef
 
-$(TARGET_PREBUILT_INT_KERNEL_VM): ;
-
 ifneq ($(KERNEL_LEGACY_DIR),true)
 $(KERNEL_USR): $(KERNEL_HEADERS_INSTALL)
 	rm -rf $(KERNEL_SYMLINK)
 	ln -s kernel/$(TARGET_KERNEL) $(KERNEL_SYMLINK)
 
 $(TARGET_PREBUILT_INT_KERNEL): $(KERNEL_USR)
-
-ifneq ($(KERNEL_VM_DEFCONFIG),)
-$(KERNEL_VM_USR): $(KERNEL_VM_HEADERS_INSTALL)
-	rm -rf $(KERNEL_VM_SYMLINK);
-	ln -s kernel_vm/$(TARGET_KERNEL) $(KERNEL_VM_SYMLINK);
-
-$(TARGET_PREBUILT_INT_KERNEL_VM): $(KERNEL_VM_USR)
-endif
-endif
-
-ifneq ($(KERNEL_VM_DEFCONFIG),)
-$(KERNEL_VM_OUT):
-	mkdir -p $(KERNEL_VM_OUT);
-
-$(KERNEL_VM_CONFIG): $(KERNEL_VM_OUT)
-	$(MAKE) -C $(TARGET_KERNEL_SOURCE) O=$(BUILD_ROOT_LOC)$(KERNEL_VM_OUT) $(KERNEL_MAKE_ENV) ARCH=$(KERNEL_ARCH) CROSS_COMPILE=$(KERNEL_CROSS_COMPILE) $(real_cc) $(KERNEL_VM_DEFCONFIG);
-	if [ ! -z "$(KERNEL_CONFIG_OVERRIDE)" ]; then \
-		echo "Overriding kernel config with '$(KERNEL_CONFIG_OVERRIDE)'"; \
-		echo $(KERNEL_CONFIG_OVERRIDE) >> $(KERNEL_VM_OUT)/.config; \
-		$(MAKE) -C $(TARGET_KERNEL_SOURCE) O=$(BUILD_ROOT_LOC)$(KERNEL_VM_OUT) $(KERNEL_MAKE_ENV) ARCH=$(KERNEL_ARCH) CROSS_COMPILE=$(KERNEL_CROSS_COMPILE) $(real_cc) oldconfig; fi;
-
-$(TARGET_PREBUILT_INT_KERNEL_VM): $(KERNEL_VM_OUT) $(KERNEL_VM_HEADERS_INSTALL)
-	echo "Building vm kernel...";
-	rm -rf $(KERNEL_VM_OUT)/arch/$(KERNEL_ARCH)/boot/dts;
-	$(MAKE) -C $(TARGET_KERNEL_SOURCE) O=$(BUILD_ROOT_LOC)$(KERNEL_VM_OUT) $(KERNEL_MAKE_ENV) ARCH=$(KERNEL_ARCH) CROSS_COMPILE=$(KERNEL_CROSS_COMPILE) $(real_cc) $(KERNEL_CFLAGS);
-
-$(KERNEL_VM_HEADERS_INSTALL): $(KERNEL_VM_OUT)
-	rm -f $(BUILD_ROOT_LOC)$(KERNEL_VM_CONFIG);
-	$(MAKE) -C $(TARGET_KERNEL_SOURCE) O=$(BUILD_ROOT_LOC)$(KERNEL_VM_OUT) $(KERNEL_MAKE_ENV) ARCH=$(KERNEL_HEADER_ARCH) CROSS_COMPILE=$(KERNEL_CROSS_COMPILE) $(real_cc) $(KERNEL_VM_DEFCONFIG);
-	$(MAKE) -C $(TARGET_KERNEL_SOURCE) O=$(BUILD_ROOT_LOC)$(KERNEL_VM_OUT) $(KERNEL_MAKE_ENV) ARCH=$(KERNEL_HEADER_ARCH) CROSS_COMPILE=$(KERNEL_CROSS_COMPILE) $(real_cc) headers_install;
-	if [ -d "$(KERNEL_VM_HEADERS_INSTALL)/include/bringup_headers" ]; then \
-		cp -Rf  $(KERNEL_VM_HEADERS_INSTALL)/include/bringup_headers/* $(KERNEL_VM_HEADERS_INSTALL)/include/ ; fi ;
-	if [ ! -z "$(KERNEL_CONFIG_OVERRIDE)" ]; then \
-		echo $(KERNEL_CONFIG_OVERRIDE) >> $(KERNEL_VM_OUT)/.config; \
-		$(MAKE) -C $(TARGET_KERNEL_SOURCE) O=$(BUILD_ROOT_LOC)$(KERNEL_VM_OUT) $(KERNEL_MAKE_ENV) ARCH=$(KERNEL_ARCH) CROSS_COMPILE=$(KERNEL_CROSS_COMPILE) $(real_cc) oldconfig; fi;
 endif
 
 $(KERNEL_OUT):
@@ -257,6 +223,21 @@ $(KERNEL_HEADERS_INSTALL): $(KERNEL_OUT)
 			echo "Overriding kernel config with '$(KERNEL_CONFIG_OVERRIDE)'"; \
 			echo $(KERNEL_CONFIG_OVERRIDE) >> $(KERNEL_OUT)/.config; \
 			$(MAKE) -C $(TARGET_KERNEL_SOURCE) O=$(BUILD_ROOT_LOC)$(KERNEL_OUT) $(KERNEL_MAKE_ENV) ARCH=$(KERNEL_ARCH) CROSS_COMPILE=$(KERNEL_CROSS_COMPILE) $(real_cc) oldconfig; fi
+
+# RTIC DTS to DTB (if MPGen enabled;
+# and make sure we don't break the build if rtic_mp.dts missing)
+$(RTIC_DTB): $(INSTALLED_KERNEL_TARGET)
+	stat $(KERNEL_SYMLINK)/rtic_mp.dts 2>/dev/null >&2 && \
+	$(DTC) -O dtb -o $(RTIC_DTB) -b 1 $(DTC_FLAGS) $(KERNEL_SYMLINK)/rtic_mp.dts || \
+	touch $(RTIC_DTB)
+
+# Creating a dtb.img once the kernel is compiled if TARGET_KERNEL_APPEND_DTB is set to be false
+$(INSTALLED_DTBIMAGE_TARGET): $(TARGET_PREBUILT_INT_KERNEL) $(INSTALLED_KERNEL_TARGET) $(RTIC_DTB)
+	$(hide) if [ -d "$(KERNEL_OUT)/arch/$(KERNEL_ARCH)/boot/dts/vendor/" ]; then \
+			cat $(KERNEL_OUT)/arch/$(KERNEL_ARCH)/boot/dts/vendor/qcom/*.dtb $(RTIC_DTB) > $@; \
+		else \
+			cat $(KERNEL_OUT)/arch/$(KERNEL_ARCH)/boot/dts/qcom/*.dtb $(RTIC_DTB) > $@; \
+		fi
 
 .PHONY: kerneltags
 kerneltags: $(KERNEL_OUT) $(KERNEL_CONFIG)
