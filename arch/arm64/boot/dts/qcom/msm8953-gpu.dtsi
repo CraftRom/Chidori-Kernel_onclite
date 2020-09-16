@@ -119,8 +119,8 @@
 		tzone-names = "gpu0-usr", "gpu1-usr";
 
 		/* CPU latency parameter */
-		qcom,pm-qos-active-latency = <213>;
-		qcom,pm-qos-wakeup-latency = <213>;
+		qcom,pm-qos-active-latency = <50>;
+		qcom,pm-qos-wakeup-latency = <50>;
 
 		/* Quirks */
 		qcom,gpu-quirk-two-pass-use-wfi;
