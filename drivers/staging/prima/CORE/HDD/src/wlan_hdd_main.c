@@ -8085,6 +8085,7 @@ int __hdd_open(struct net_device *dev)
       return -ENODEV;
    }
 
+
    if (test_bit(DEVICE_IFACE_OPENED, &pAdapter->event_flags)) {
           hddLog(VOS_TRACE_LEVEL_DEBUG, "%s: session already opened for the adapter",
                  __func__);
