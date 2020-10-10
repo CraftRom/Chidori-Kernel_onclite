@@ -8,7 +8,7 @@
 KERNEL_DIR=$PWD
 KERN_IMG=$KERNEL_DIR/out/arch/arm64/boot/Image.gz-dtb
 ZIP_DIR=$KERNEL_DIR/AnyKernel3
-CONFIG=onc-perf_defconfig
+CONFIG=onclite-perf_defconfig
 
 # Export
 export ARCH=arm64
@@ -45,7 +45,6 @@ kmake_flags+=(
 
 	CROSS_COMPILE="$gcc_prefix64"
 	CROSS_COMPILE_ARM32="$gcc_prefix32"
-	KBUILD_COMPILER_STRING="$(get_clang_version clang)"
 )
 
 # Build start
