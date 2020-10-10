@@ -6482,6 +6482,7 @@ void cgroup_sk_alloc(struct sock_cgroup_data *skcd)
 	if (cgroup_sk_alloc_disabled) {
 		skcd->no_refcnt = 1;
 		return;
+	}
 
 	/* Don't associate the sock with unrelated interrupted task's cgroup. */
 	if (in_interrupt())
