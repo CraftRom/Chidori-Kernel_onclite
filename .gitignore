@@ -127,3 +127,5 @@ Android.bp
 /out/
 /libufdt/
 /AnyKernel3/
+/stock_32/
+/stock/
