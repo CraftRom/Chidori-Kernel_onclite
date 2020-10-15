@@ -84,6 +84,8 @@ choice
 		  any workload. It also tries to guarantee low latency to
 		  interactive and soft real-time applications.
 
+endchoice
+
 config DEFAULT_IOSCHED
 	string
 	default "deadline" if DEFAULT_DEADLINE
