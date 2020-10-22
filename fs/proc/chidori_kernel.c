@@ -8,6 +8,7 @@ static int chidori_kernel_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "{\"kernel-name\": \"Chidori-Kernel\","
 			"\"version\": \"5\","
+                       "\"type\": \"stable\","
 			"\"buildtime\": \"%s\"}\n", CHIDORI_KERNEL_TIMESTAMP);
 	return 0;
 }
@@ -26,7 +27,7 @@ static const struct file_operations chidori_kernel_proc_fops = {
 
 static int __init proc_chidori_kernel_init(void)
 {
-	proc_create("chidoriKernel", 0, NULL, &chidori_kernel_proc_fops);
+	proc_create("chidori_kernel", 0, NULL, &chidori_kernel_proc_fops);
 	return 0;
 }
 module_init(proc_chidori_kernel_init);
