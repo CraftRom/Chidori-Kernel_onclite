@@ -539,20 +539,6 @@ KBUILD_CFLAGS += $(call cc-disable-warning, address-of-packed-member)
 KBUILD_CFLAGS += $(call cc-disable-warning, duplicate-decl-specifier)
 KBUILD_CFLAGS += $(call cc-option, -Wno-undefined-optimized)
 KBUILD_CFLAGS += $(call cc-option, -Wno-tautological-constant-out-of-range-compare)
-KBUILD_CFLAGS += $(call cc-disable-warning, undefined-optimized)
-KBUILD_CFLAGS += $(call cc-disable-warning, tautological-constant-out-of-range-compare)
-KBUILD_CFLAGS += $(call cc-disable-warning, pointer-bool-conversion)
-KBUILD_CFLAGS += $(call cc-disable-warning, parentheses-equality)
-KBUILD_CFLAGS += $(call cc-disable-warning, unused-function)
-KBUILD_CFLAGS += $(call cc-disable-warning, implicit-function-declaration)
-KBUILD_CFLAGS += $(call cc-disable-warning, non-literal-null-conversion)
-KBUILD_CFLAGS += $(call cc-disable-warning, unknown-warning-option)
-KBUILD_CFLAGS += $(call cc-disable-warning, fortify-source)
-KBUILD_CFLAGS += $(call cc-disable-warning, enum-conversion)
-KBUILD_CFLAGS += $(call cc-disable-warning, constant-logical-operand)
-KBUILD_CFLAGS += $(call cc-disable-warning, misleading-indentation)
-KBUILD_CFLAGS += $(call cc-disable-warning, macro-redefined)
-KBUILD_CFLAGS += $(call cc-disable-warning, void-pointer-to-enum-cast)
 KBUILD_CFLAGS += $(call cc-option, -Wno-sometimes-uninitialized)
 KBUILD_CFLAGS += $(call cc-option, -Wstring-concatenation)
 KBUILD_CFLAGS += -Wno-asm-operand-widths
@@ -560,6 +546,7 @@ KBUILD_CFLAGS += -Wno-initializer-overrides
 KBUILD_CFLAGS += -fno-builtin
 
 # Quiet clang warning: comparison of unsigned expression < 0 is always false
+
 KBUILD_CFLAGS += $(call cc-disable-warning, tautological-compare)
 # CLANG uses a _MergedGlobals as optimization, but this breaks modpost, as the
 # source of a reference will be _MergedGlobals and not on of the whitelisted names.
@@ -728,7 +715,6 @@ KBUILD_CFLAGS	+= $(call cc-disable-warning, int-in-bool-context)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, address-of-packed-member)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, attribute-alias)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, misleading-indentation)
-KBUILD_CFLAGS	+= $(call cc-disable-warning, psabi)
 
 ifdef CONFIG_LD_DEAD_CODE_DATA_ELIMINATION
 KBUILD_CFLAGS	+= $(call cc-option,-ffunction-sections,)
@@ -841,22 +827,6 @@ KBUILD_CPPFLAGS += $(call cc-option,-Qunused-arguments,)
 KBUILD_CFLAGS += $(call cc-disable-warning, format-invalid-specifier)
 KBUILD_CFLAGS += $(call cc-disable-warning, gnu)
 KBUILD_CFLAGS += $(call cc-disable-warning, duplicate-decl-specifier)
-KBUILD_CFLAGS += $(call cc-disable-warning, pointer-bool-conversion)
-KBUILD_CFLAGS += $(call cc-disable-warning, unused-variable)
-KBUILD_CFLAGS += $(call cc-disable-warning, address-of-packed-member)
-KBUILD_CFLAGS += $(call cc-disable-warning, undefined-optimized)
-KBUILD_CFLAGS += $(call cc-disable-warning, tautological-constant-out-of-range-compare)
-KBUILD_CFLAGS += $(call cc-disable-warning, parentheses-equality)
-KBUILD_CFLAGS += $(call cc-disable-warning, unused-function)
-KBUILD_CFLAGS += $(call cc-disable-warning, implicit-function-declaration)
-KBUILD_CFLAGS += $(call cc-disable-warning, non-literal-null-conversion)
-KBUILD_CFLAGS += $(call cc-disable-warning, unknown-warning-option)
-KBUILD_CFLAGS += $(call cc-disable-warning, fortify-source)
-KBUILD_CFLAGS += $(call cc-disable-warning, enum-conversion)
-KBUILD_CFLAGS += $(call cc-disable-warning, constant-logical-operand)
-KBUILD_CFLAGS += $(call cc-disable-warning, misleading-indentation)
-KBUILD_CFLAGS += $(call cc-disable-warning, macro-redefined)
-KBUILD_CFLAGS += $(call cc-disable-warning, void-pointer-to-enum-cast)
 # Quiet clang warning: comparison of unsigned expression < 0 is always false
 KBUILD_CFLAGS += $(call cc-disable-warning, tautological-compare)
 # CLANG uses a _MergedGlobals as optimization, but this breaks modpost, as the

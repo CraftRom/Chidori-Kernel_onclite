@@ -8,4 +8,3 @@ obj-$(CONFIG_TOUCHSCREEN_GX)	+=  gt1x.o
 obj-$(CONFIG_TOUCHSCREEN_GX)	+=  gt1x_update.o
 obj-$(CONFIG_TOUCHSCREEN_GX)    +=  gt1x_test.o
 obj-$(CONFIG_TOUCHSCREEN_GX)    +=  test_function.o
-ccflags-y       += $(call cc-disable-warning, sizeof-pointer-div)
