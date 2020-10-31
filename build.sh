@@ -11,7 +11,7 @@ ZIP_DIR=$KERNEL_DIR/AnyKernel3
 CONFIG=onclite-perf_defconfig
 CROSS_COMPILE="aarch64-linux-android-"
 CROSS_COMPILE_ARM32="arm-linux-androideabi-"
-PATH=:"${KERNEL_DIR}/clang/proton/bin:${PATH}:${KERNEL_DIR}/stock/bin:${PATH}:${KERNEL_DIR}/stock_32/bin:${PATH}"
+PATH=:"${KERNEL_DIR}/silont-clang/bin:${PATH}:${KERNEL_DIR}/stock/bin:${PATH}:${KERNEL_DIR}/stock_32/bin:${PATH}"
 
 # Export
 export ARCH=arm64
@@ -57,3 +57,4 @@ make normal &>/dev/null
 echo "Flashable zip generated under $ZIP_DIR."
 cd ..
 # Build end
+
