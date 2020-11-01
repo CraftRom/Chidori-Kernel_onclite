@@ -1732,9 +1732,9 @@ static bool __is_roi_valid(struct mdss_mdp_pipe *pipe,
 		mdss_mdp_intersect_rect(&res, &dst, &roi);
 
 		if (!mdss_rect_cmp(&res, &dst)) {
-			pr_debug("error. pipe%d has scaling and its output is interesecting with roi.\n",
+			pr_err("error. pipe%d has scaling and its output is interesecting with roi.\n",
 				pipe->num);
-			pr_debug("pipe_dst:-> %d %d %d %d roi:-> %d %d %d %d\n",
+			pr_err("pipe_dst:-> %d %d %d %d roi:-> %d %d %d %d\n",
 				dst.x, dst.y, dst.w, dst.h,
 				roi.x, roi.y, roi.w, roi.h);
 			ret = false;
@@ -1973,7 +1973,7 @@ static void __validate_and_set_roi(struct msm_fb_data_type *mfd,
 	list_for_each_entry(pipe, &mdp5_data->pipes_used, list) {
 		if (!__is_roi_valid(pipe, &l_roi, &r_roi)) {
 			skip_partial_update = true;
-			pr_debug("error. invalid pu config for pipe%d: %d,%d,%d,%d\n",
+			pr_err("error. invalid pu config for pipe%d: %d,%d,%d,%d\n",
 				pipe->num,
 				pipe->dst.x, pipe->dst.y,
 				pipe->dst.w, pipe->dst.h);
@@ -2883,15 +2883,12 @@ int mdss_mdp_overlay_kickoff(struct msm_fb_data_type *mfd,
 		return ret;
 	}
 
-	mdss_mdp_pp_commit_notify(ctl, true);
-
 	ret = mdss_iommu_ctrl(1);
 	if (IS_ERR_VALUE((unsigned long)ret)) {
 		pr_err("iommu attach failed rc=%d\n", ret);
 		mutex_unlock(&mdp5_data->ov_lock);
 		if (ctl->shared_lock)
 			mutex_unlock(ctl->shared_lock);
-		mdss_mdp_pp_commit_notify(ctl, false);
 		return ret;
 	}
 	mutex_lock(&mdp5_data->list_lock);
@@ -2973,8 +2970,6 @@ int mdss_mdp_overlay_kickoff(struct msm_fb_data_type *mfd,
 
 	if (!mdp5_data->kickoff_released)
 		mdss_mdp_ctl_notify(ctl, MDP_NOTIFY_FRAME_CTX_DONE);
-
-	mdss_mdp_pp_commit_notify(ctl, false);
 
 	if (IS_ERR_VALUE((unsigned long)ret))
 		goto commit_fail;

@@ -608,7 +608,7 @@ static int __smem_alloc(struct venus_hfi_device *dev,
 
 	dprintk(VIDC_DBG, "__smem_alloc: ptr = %pK, size = %d\n",
 			alloc->kvaddr, size);
-	rc = msm_smem_cache_operations(dev->hal_client, alloc, 0, alloc->size,
+	rc = msm_smem_cache_operations(dev->hal_client, alloc,
 		SMEM_CACHE_CLEAN);
 	if (rc) {
 		dprintk(VIDC_WARN, "Failed to clean cache\n");
@@ -1337,9 +1337,6 @@ static int venus_hfi_suspend(void *dev)
 	} else if (!device->res->sw_power_collapsible) {
 		return -ENOTSUPP;
 	}
-
-	dprintk(VIDC_DBG, "Suspending Venus\n");
-	flush_delayed_work(&venus_hfi_pm_work);
 
 	mutex_lock(&device->lock);
 

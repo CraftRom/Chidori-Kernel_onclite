@@ -1468,9 +1468,7 @@ int __wlan_hdd_mgmt_tx( struct wiphy *wiphy, struct net_device *dev,
 
     //If GO adapter exists and operating on same frequency
     //then we will not request remain on channel
-    if (chan &&
-        (ieee80211_frequency_to_channel(chan->center_freq) ==
-        home_ch))
+    if (ieee80211_frequency_to_channel(chan->center_freq) == home_ch)
     {
         /*  if GO exist and is not off channel
          *  wait time should be zero.
@@ -1481,7 +1479,7 @@ int __wlan_hdd_mgmt_tx( struct wiphy *wiphy, struct net_device *dev,
 #endif
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,38))
-    if( offchan && wait && chan)
+    if( offchan && wait)
     {
         int status;
         rem_on_channel_request_type_t req_type = OFF_CHANNEL_ACTION_TX;

@@ -181,9 +181,6 @@ static unsigned long limits_mitigation_notify(struct limits_dcvs_hw *hw)
 
 notify_exit:
 	hw->hw_freq_limit = max_limit;
-	get_online_cpus();
-	cpufreq_update_policy(cpumask_first(&hw->core_map));
-	put_online_cpus();
 	return max_limit;
 }
 
@@ -592,13 +589,6 @@ static int limits_dcvs_probe(struct platform_device *pdev)
 	ret = enable_lmh();
 	if (ret)
 		return ret;
-
-	if (!IS_ENABLED(CONFIG_QTI_THERMAL_LIMITS_DCVS)) {
-		limits_isens_vref_ldo_init(pdev, hw);
-		devm_kfree(&pdev->dev, hw->cdev_data);
-		devm_kfree(&pdev->dev, hw);
-		return 0;
-	}
 
 	/*
 	 * Setup virtual thermal zones for each LMH-DCVS hardware
