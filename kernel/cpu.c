@@ -248,6 +248,12 @@ static struct {
 #define cpuhp_lock_acquire()      lock_map_acquire(&cpu_hotplug.dep_map)
 #define cpuhp_lock_release()      lock_map_release(&cpu_hotplug.dep_map)
 
+void cpu_hotplug_mutex_held(void)
+{
+	lockdep_assert_held(&cpu_hotplug.lock);
+}
+EXPORT_SYMBOL(cpu_hotplug_mutex_held);
+
 void get_online_cpus(void)
 {
 	might_sleep();
@@ -1308,13 +1314,6 @@ int freeze_secondary_cpus(int primary)
 	for_each_online_cpu(cpu) {
 		if (cpu == primary)
 			continue;
-
-		if (pm_wakeup_pending()) {
-			pr_info("Wakeup pending. Abort CPU freeze\n");
-			error = -EBUSY;
-			break;
-		}
-
 		trace_suspend_resume(TPS("CPU_OFF"), cpu, true);
 		error = _cpu_down(cpu, 1, CPUHP_OFFLINE);
 		trace_suspend_resume(TPS("CPU_OFF"), cpu, false);
@@ -2270,22 +2269,6 @@ EXPORT_SYMBOL(__cpu_active_mask);
 
 struct cpumask __cpu_isolated_mask __read_mostly;
 EXPORT_SYMBOL(__cpu_isolated_mask);
-
-#if CONFIG_LITTLE_CPU_MASK
-static const unsigned long lp_cpu_bits = CONFIG_LITTLE_CPU_MASK;
-const struct cpumask *const cpu_lp_mask = to_cpumask(&lp_cpu_bits);
-#else
-const struct cpumask *const cpu_lp_mask = cpu_possible_mask;
-#endif
-EXPORT_SYMBOL(cpu_lp_mask);
-
-#if CONFIG_BIG_CPU_MASK
-static const unsigned long perf_cpu_bits = CONFIG_BIG_CPU_MASK;
-const struct cpumask *const cpu_perf_mask = to_cpumask(&perf_cpu_bits);
-#else
-const struct cpumask *const cpu_perf_mask = cpu_possible_mask;
-#endif
-EXPORT_SYMBOL(cpu_perf_mask);
 
 void init_cpu_present(const struct cpumask *src)
 {

@@ -23,7 +23,7 @@
 #include <linux/cpu.h>
 #include <linux/cpumask.h>
 #include <linux/suspend.h>
-#include <linux/clk/msm-clk-provider.h>
+#include <linux/clk.h>
 #include <linux/err.h>
 #include <linux/platform_device.h>
 #include <linux/of.h>
@@ -32,12 +32,6 @@
 #include <trace/events/power.h>
 #include <linux/proc_fs.h>
 #include <linux/uaccess.h>
-
-// AP: Default startup frequencies
-#define CONFIG_CPU_FREQ_MIN_CLUSTER1	307200
-#define CONFIG_CPU_FREQ_MAX_CLUSTER1	1804800
-#define CONFIG_CPU_FREQ_MIN_CLUSTER2	307200
-#define CONFIG_CPU_FREQ_MAX_CLUSTER2	1804800
 
 static DEFINE_MUTEX(l2bw_lock);
 
@@ -169,34 +163,8 @@ static int msm_cpufreq_init(struct cpufreq_policy *policy)
 
 	ret = cpufreq_table_validate_and_show(policy, table);
 	if (ret) {
-
-		if (policy->cpu <= 3)
-		{
-			policy->cpuinfo.min_freq = CONFIG_CPU_FREQ_MIN_CLUSTER1;
-			policy->cpuinfo.max_freq = CONFIG_CPU_FREQ_MAX_CLUSTER1;
-		}
-
-		if (policy->cpu >= 4)
-		{
-			policy->cpuinfo.min_freq = CONFIG_CPU_FREQ_MIN_CLUSTER2;
-			policy->cpuinfo.max_freq = CONFIG_CPU_FREQ_MAX_CLUSTER2;
-		}
-
 		pr_err("cpufreq: failed to get policy min/max\n");
 		return ret;
-	}
-
-	// AP: set default frequencies to prevent overclocking or underclocking during start
-	if (policy->cpu <= 3)
-	{
-		policy->min = CONFIG_CPU_FREQ_MIN_CLUSTER1;
-		policy->max = CONFIG_CPU_FREQ_MAX_CLUSTER1;
-	}
-
-	if (policy->cpu >= 4)
-	{
-		policy->min = CONFIG_CPU_FREQ_MIN_CLUSTER2;
-		policy->max = CONFIG_CPU_FREQ_MAX_CLUSTER2;
 	}
 
 	cur_freq = clk_get_rate(cpu_clk[policy->cpu])/1000;
@@ -508,7 +476,6 @@ static int msm_cpufreq_probe(struct platform_device *pdev)
 			return PTR_ERR(c);
 		else if (IS_ERR(c))
 			c = cpu_clk[cpu-1];
-		c->flags |= CLKFLAG_NO_RATE_CACHE;
 		cpu_clk[cpu] = c;
 	}
 	hotplug_ready = true;

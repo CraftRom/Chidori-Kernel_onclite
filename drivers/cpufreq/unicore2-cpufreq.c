@@ -58,12 +58,13 @@ static int __init ucv2_cpu_init(struct cpufreq_policy *policy)
 
 	policy->min = policy->cpuinfo.min_freq = 250000;
 	policy->max = policy->cpuinfo.max_freq = 1000000;
+	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
 	policy->clk = clk_get(NULL, "MAIN_CLK");
 	return PTR_ERR_OR_ZERO(policy->clk);
 }
 
 static struct cpufreq_driver ucv2_driver = {
-	.flags		= CPUFREQ_STICKY | CPUFREQ_NO_AUTO_DYNAMIC_SWITCHING,
+	.flags		= CPUFREQ_STICKY,
 	.verify		= ucv2_verify_speed,
 	.target		= ucv2_target,
 	.get		= cpufreq_generic_get,
