@@ -7368,6 +7368,16 @@ retry:
 					break;
 		}
 
+			/*
+			 * If we found an active CPU and its utilization
+			 * is below the minimum packing threshold (overlap),
+			 * no need to search further. Otherwise reset
+			 * the target_capacity and continue the search.
+			 */
+			if (target_cpu != -1 && target_util <
+					sched_smp_overlap_capacity)
+				break;
+
 			target_capacity = ULONG_MAX;
 		}
 		/*
