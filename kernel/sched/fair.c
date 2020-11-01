@@ -7350,23 +7350,35 @@ retry:
 		}
 
 		/*
-		 * For placement boost (or otherwise), we start with group
-		 * where the task should be placed. When
-		 * placement boost is active, and we are not at the highest
-		 * capacity group reset the target_capacity to keep
-		 * traversing to other higher clusters.
-		 * If we already are at the highest capacity cluster we skip
-		 * going around to the lower capacity cluster if we've found
-		 * a cpu.
+		 * If we've found a cpu, but the boost is ON_ALL we continue
+		 * visiting other clusters. If the boost is ON_BIG we visit
+		 * next cluster if they are higher in capacity. If we are
+		 * not in any kind of boost, we break.
 		 */
-		if (fbt_env->placement_boost) {
-			if (capacity_orig_of(group_first_cpu(sg)) <
-				capacity_orig_of(group_first_cpu(sg->next)))
-				target_capacity = ULONG_MAX;
-			else
-				if (target_cpu != -1 || best_idle_cpu != -1)
+		if (!prefer_idle && !boosted &&
+			(target_cpu != -1 || best_idle_cpu != -1) &&
+			(fbt_env->placement_boost == SCHED_BOOST_NONE ||
+			sched_boost() != FULL_THROTTLE_BOOST ||
+			(fbt_env->placement_boost == SCHED_BOOST_ON_BIG &&
+				!next_group_higher_cap)))
+			break;
+
+		/*
+		 * if we are in prefer_idle and have found an idle cpu,
+		 * break from searching more groups based on the stune.boost and
+		 * group cpu capacity. For !prefer_idle && boosted case, don't
+		 * iterate lower capacity CPUs unless the task can't be
+		 * accommodated in the higher capacity CPUs.
+		 */
+		if ((prefer_idle && best_idle_cpu != -1) ||
+		    (boosted && (best_idle_cpu != -1 || target_cpu != -1))) {
+			if (boosted) {
+				if (!next_group_higher_cap)
 					break;
-		}
+			} else {
+				if (next_group_higher_cap)
+					break;
+			}
 
 			/*
 			 * If we found an active CPU and its utilization
