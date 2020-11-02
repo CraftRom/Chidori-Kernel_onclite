@@ -31,6 +31,12 @@ CONFIG_WLAN_FEATURE_SAE := y
 # Flag to enable Legacy Fast Roaming(LFR) Make Before Break
 CONFIG_PRIMA_WLAN_LFR_MBB := y
 
+#Flag to enable SW PTA
+    CONFIG_WLAN_FEATURE_SW_PTA := y
+
+#Flag to enable OWE
+    CONFIG_WLAN_AKM_SUITE_OWE := y
+
 # JB kernel has PMKSA patches, hence enabling this flag
 CONFIG_PRIMA_WLAN_OKC := y
 
