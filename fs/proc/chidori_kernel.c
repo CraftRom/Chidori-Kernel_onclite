@@ -7,7 +7,7 @@
 static int chidori_kernel_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "{\"kernel-name\": \"Chidori-Kernel\","
-			"\"version\": \"9.0\","
+			"\"version\": \"10.0\","
 			"\"type\": \"stable\","
 			"\"buildtime\": \"%s\"}\n", CHIDORI_KERNEL_TIMESTAMP);
 	return 0;
