@@ -70,7 +70,7 @@ static int __lz4hc_compress_crypto(const u8 *src, unsigned int slen,
 
 	err = lz4hc_compress(src, slen, dst, &tmp_len, ctx);
 
-	if (out_len < 0)
+	if (err < 0)
 		return -EINVAL;
 
 	*dlen = tmp_len;
