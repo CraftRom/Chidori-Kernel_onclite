@@ -12,26 +12,8 @@
  */
 
 #include "msm8953.dtsi"
-#include "msm8953-bus.dtsi"
-#include "msm8953-thermal.dtsi"
-#include "msm8953-regulator.dtsi"
-#include "sdm450-pmi632.dtsi"
-#include "msm8953-audio.dtsi"
-#include "msm8953-camera.dtsi"
-#include "msm8953-camera-sensor-mtp.dtsi"
-#include "msm8953-camera-sensor-cdp.dtsi"
-#include "msm8953-camera-sensor-qrd.dtsi"
-#include "msm8953-pinctrl.dtsi"
-#include "msm8953-mtp.dtsi"
 #include "sdm632-cpu.dtsi"
 #include "sdm632-regulator.dtsi"
-#include "skeleton64.dtsi"
-#include <dt-bindings/gpio/gpio.h>
-#include <dt-bindings/spmi/spmi.h>
-#include <dt-bindings/interrupt-controller/arm-gic.h>
-#include <dt-bindings/regulator/qcom,rpm-smd-regulator.h>
-#include <dt-bindings/msm/msm-bus-ids.h>
-
 
 / {
 	model = "Qualcomm Technologies, Inc. SDM632";
@@ -40,7 +22,7 @@
 	qcom,msm-name = "SDM632";
 
 	chosen {
-		bootargs = "kpti=0 noirqdebug rcu_nocbs=0-7 cgroup.memory=nokmem,nosocket cpuidle_sysfs_switch rcupdate.rcu_normal_after_boot=1";
+		bootargs = "kpti=0";
 	};
 };
 
@@ -1001,19 +983,19 @@
 		cci-cpufreq {
 			target-dev = <&cci_cache>;
 			cpu-to-dev-map-0 =
-				<  614400 307200>,	/* SVS   */
-				<  883200 403200>,	/* SVS   */
-				< 1036800 499200>,	/* SVS   */
-				< 1363200 691200>,	/* NOM   */
-				< 1536000 768000>,	/* NOM+  */
-				< 1670400 787200>;	/* TURBO */
+				<  614400 307200>,      /* SVS   */
+				<  883200 403200>,
+				< 1036800 499200>,
+				< 1363200 691200>,      /* NOM   */
+				< 1536000 768000>,      /* NOM+  */
+				< 1670400 787200>;      /* TURBO */
 			cpu-to-dev-map-4 =
-				<  633600 307200>,	/* SVS   */
-				<  902400 403200>,	/* SVS   */
+				<  633600 307200>,      /* SVS   */
+				<  902400 403200>,
 				< 1094400 499200>,	/* SVS   */
-				< 1401600 691200>,	/* NOM   */
-				< 1555200 768000>,	/* NOM+  */
-				< 1804800 787200>;	/* TURBO */
+				< 1401600 691200>,      /* NOM   */
+				< 1555200 768000>,      /* NOM+  */
+				< 1804800 787200>;      /* TURBO */
 		};
 	};
 };

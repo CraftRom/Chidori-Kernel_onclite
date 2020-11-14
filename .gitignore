@@ -123,10 +123,3 @@ kernel/configs/android-*.cfg
 #Ignoring Android.bp link file
 #
 Android.bp
-
-/out/
-/libufdt/
-/AnyKernel3/
-/stock_32/
-/stock/
-/clang/

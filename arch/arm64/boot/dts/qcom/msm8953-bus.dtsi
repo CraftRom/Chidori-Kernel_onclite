@@ -33,8 +33,8 @@
 			qcom,bus-type = <2>;
 			qcom,util-fact = <153>;
 			clock-names = "bus_clk", "bus_a_clk";
-			clocks = <&clock_gcc	clk_bimc_msmbus_clk>, 
-			<&clock_gcc	clk_bimc_msmbus_a_clk>;
+			clocks = <&clock_gcc  clk_bimc_msmbus_clk>,
+				<&clock_gcc  clk_bimc_msmbus_a_clk>;
 		};
 
 		fab_pcnoc: fab-pcnoc {

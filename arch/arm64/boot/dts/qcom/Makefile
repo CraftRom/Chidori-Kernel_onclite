@@ -385,16 +385,7 @@ dtbo-$(CONFIG_ARCH_SDM632) += sdm632-rumi-overlay.dtbo \
 	sdm632-ext-codec-mtp-s4-overlay.dtbo \
 	sdm632-rcm-overlay.dtbo \
 	sdm450-qrd-sku4-overlay.dtbo \
-	sdm632-qrd-overlay.dtbo \
-	msm8953-mtp-overlay.dtbo \
-	msm8953-cdp-overlay.dtbo \
-	msm8953-rcm-overlay.dtbo \
-	msm8953-ipc-overlay.dtbo \
-	msm8953-qrd-overlay.dtbo \
-	msm8953-iot-mtp-overlay.dtbo \
-	msm8953-ext-codec-mtp-overlay.dtbo \
-	msm8953-ext-codec-rcm-overlay.dtbo \
-	msm8953-cdp-1200p-overlay.dtbo
+	sdm632-qrd-overlay.dtbo
 
 dtbo-$(CONFIG_ARCH_SDM439) += sdm439-mtp-overlay.dtbo \
 	sdm439-cdp-overlay.dtbo \

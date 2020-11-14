@@ -158,7 +158,7 @@ static void fq_flow_set_throttled(struct fq_sched_data *q, struct fq_flow *f)
 		struct fq_flow *aux;
 
 		parent = *p;
-		aux = rb_entry(parent, struct fq_flow, rate_node);
+		aux = container_of(parent, struct fq_flow, rate_node);
 		if (f->time_next_packet >= aux->time_next_packet)
 			p = &parent->rb_right;
 		else
@@ -201,7 +201,7 @@ static void fq_gc(struct fq_sched_data *q,
 	while (*p) {
 		parent = *p;
 
-		f = rb_entry(parent, struct fq_flow, fq_node);
+		f = container_of(parent, struct fq_flow, fq_node);
 		if (f->sk == sk)
 			break;
 
@@ -269,7 +269,7 @@ static struct fq_flow *fq_classify(struct sk_buff *skb, struct fq_sched_data *q)
 		sk = (struct sock *)((hash << 1) | 1UL);
 	}
 
-	root = &q->fq_root[hash_ptr(sk, q->fq_trees_log)];
+	root = &q->fq_root[hash_32((u32)(long)sk, q->fq_trees_log)];
 
 	if (q->flows >= (2U << q->fq_trees_log) &&
 	    q->inactive_flows > q->flows/2)
@@ -280,7 +280,7 @@ static struct fq_flow *fq_classify(struct sk_buff *skb, struct fq_sched_data *q)
 	while (*p) {
 		parent = *p;
 
-		f = rb_entry(parent, struct fq_flow, fq_node);
+		f = container_of(parent, struct fq_flow, fq_node);
 		if (f->sk == sk) {
 			/* socket might have been reallocated, so check
 			 * if its sk_hash is the same.
@@ -291,9 +291,6 @@ static struct fq_flow *fq_classify(struct sk_buff *skb, struct fq_sched_data *q)
 				     f->socket_hash != sk->sk_hash)) {
 				f->credit = q->initial_quantum;
 				f->socket_hash = sk->sk_hash;
-				if (q->rate_enable)
-					smp_store_release(&sk->sk_pacing_status,
-							  SK_PACING_FQ);
 				if (fq_flow_is_throttled(f))
 					fq_flow_unset_throttled(q, f);
 				f->time_next_packet = 0ULL;
@@ -313,12 +310,8 @@ static struct fq_flow *fq_classify(struct sk_buff *skb, struct fq_sched_data *q)
 	}
 	fq_flow_set_detached(f);
 	f->sk = sk;
-	if (skb->sk == sk) {
+	if (skb->sk == sk)
 		f->socket_hash = sk->sk_hash;
-		if (q->rate_enable)
-			smp_store_release(&sk->sk_pacing_status,
-					  SK_PACING_FQ);
-	}
 	f->credit = q->initial_quantum;
 
 	rb_link_node(&f->fq_node, parent, p);
@@ -423,9 +416,17 @@ static int fq_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 		q->stat_tcp_retrans++;
 	qdisc_qstats_backlog_inc(sch, skb);
 	if (fq_flow_is_detached(f)) {
+		struct sock *sk = skb->sk;
+
 		fq_flow_add_tail(&q->new_flows, f);
 		if (time_after(jiffies, f->age + q->flow_refill_delay))
 			f->credit = max_t(u32, f->credit, q->quantum);
+		if (sk && q->rate_enable) {
+			if (unlikely(smp_load_acquire(&sk->sk_pacing_status) !=
+				     SK_PACING_FQ))
+				smp_store_release(&sk->sk_pacing_status,
+						  SK_PACING_FQ);
+		}
 		q->inactive_flows--;
 	}
 
@@ -457,7 +458,7 @@ static void fq_check_throttled(struct fq_sched_data *q, u64 now)
 
 	q->time_next_delayed_flow = ~0ULL;
 	while ((p = rb_first(&q->delayed)) != NULL) {
-		struct fq_flow *f = rb_entry(p, struct fq_flow, rate_node);
+		struct fq_flow *f = container_of(p, struct fq_flow, rate_node);
 
 		if (f->time_next_packet > now) {
 			q->time_next_delayed_flow = f->time_next_packet;
@@ -594,7 +595,7 @@ static void fq_reset(struct Qdisc *sch)
 	for (idx = 0; idx < (1U << q->fq_trees_log); idx++) {
 		root = &q->fq_root[idx];
 		while ((p = rb_first(root)) != NULL) {
-			f = rb_entry(p, struct fq_flow, fq_node);
+			f = container_of(p, struct fq_flow, fq_node);
 			rb_erase(p, root);
 
 			fq_flow_purge(f);
@@ -624,20 +625,20 @@ static void fq_rehash(struct fq_sched_data *q,
 		oroot = &old_array[idx];
 		while ((op = rb_first(oroot)) != NULL) {
 			rb_erase(op, oroot);
-			of = rb_entry(op, struct fq_flow, fq_node);
+			of = container_of(op, struct fq_flow, fq_node);
 			if (fq_gc_candidate(of)) {
 				fcnt++;
 				kmem_cache_free(fq_flow_cachep, of);
 				continue;
 			}
-			nroot = &new_array[hash_ptr(of->sk, new_log)];
+			nroot = &new_array[hash_32((u32)(long)of->sk, new_log)];
 
 			np = &nroot->rb_node;
 			parent = NULL;
 			while (*np) {
 				parent = *np;
 
-				nf = rb_entry(parent, struct fq_flow, fq_node);
+				nf = container_of(parent, struct fq_flow, fq_node);
 				BUG_ON(nf->sk == of->sk);
 
 				if (nf->sk > of->sk)

@@ -1552,7 +1552,6 @@ limProcessAssocReqFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,
                                     Dot11fIERSN.akm_suite[0]);
 
                 if (akm_type == ANI_AKM_TYPE_SAE) {
-
                     if (eSIR_SUCCESS != (status =
                         lim_check_sae_pmf_cap(psessionEntry, &Dot11fIERSN))) {
                         /* Reject pmf disable SAE STA */
