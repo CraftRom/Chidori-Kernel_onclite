@@ -1278,12 +1278,9 @@ static enum power_supply_property smb5_batt_props[] = {
 	POWER_SUPPLY_PROP_RECHARGE_SOC,
 	POWER_SUPPLY_PROP_CHARGE_FULL,
         POWER_SUPPLY_PROP_TIME_TO_FULL_NOW,
-	//begin for the total capacity of batt in  2018.11.05
 	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
-	//end for the total capacity of batt in  2018.11.05
-	#ifdef XIAOMI_CHARGER_RUNIN
-	POWER_SUPPLY_PROP_CHARGING_ENABLED,//lct add for runin 20181105
-	#endif
+	POWER_SUPPLY_PROP_TIME_TO_FULL_NOW,
+	POWER_SUPPLY_PROP_FCC_STEPPER_ENABLE,
 };
 
 #define ITERM_SCALING_FACTOR_PMI632	1525
@@ -1432,11 +1429,7 @@ static int smb5_batt_get_prop(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_DP_DM:
 		val->intval = chg->pulse_cnt;
 		break;
-	//begin for the total capacity of batt in  2018.11.05
-	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
-		rc = smblib_get_prop_battery_full_design(chg, val);
-		break;
-	//end for the total capacity of batt in  2018.11.05
+
 	case POWER_SUPPLY_PROP_RERUN_AICL:
 		val->intval = 0;
 		break;
@@ -1455,6 +1448,12 @@ static int smb5_batt_get_prop(struct power_supply *psy,
 		rc = smblib_get_prop_from_bms(chg,
 				POWER_SUPPLY_PROP_CHARGE_FULL, val);
 		break;
+
+	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+		rc = smblib_get_prop_from_bms(chg,
+				POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN, val);
+		break;
+
 	case POWER_SUPPLY_PROP_TIME_TO_FULL_NOW:
 		rc = smblib_get_prop_from_bms(chg,
 				POWER_SUPPLY_PROP_TIME_TO_FULL_NOW, val);
