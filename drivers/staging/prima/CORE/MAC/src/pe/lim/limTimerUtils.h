@@ -82,8 +82,6 @@ enum
 #ifdef WLAN_FEATURE_LFR_MBB
     eLIM_PREAUTH_MBB_RSP_TIMER,
     eLIM_REASSOC_MBB_RSP_TIMER,
-#endif
-#ifdef WLAN_FEATURE_SAE
     eLIM_AUTH_SAE_TIMER
 #endif
 };

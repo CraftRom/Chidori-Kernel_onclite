@@ -218,7 +218,7 @@ wpt_status wpalRegisterInterrupt
 )
 {
    if (NULL == gpEnv) {
-      WPAL_TRACE(eWLAN_MODULE_DAL_DATA, eWLAN_PAL_TRACE_LEVEL_INFO,
+      WPAL_TRACE(eWLAN_MODULE_DAL_DATA, eWLAN_PAL_TRACE_LEVEL_ERROR,
                  "%s: invoked before subsystem initialized",
                  __func__);
       return eWLAN_PAL_STATUS_E_INVAL;
@@ -284,7 +284,7 @@ void wpalUnRegisterInterrupt
 )
 {
    if (NULL == gpEnv) {
-      WPAL_TRACE(eWLAN_MODULE_DAL_DATA, eWLAN_PAL_TRACE_LEVEL_INFO,
+      WPAL_TRACE(eWLAN_MODULE_DAL_DATA, eWLAN_PAL_TRACE_LEVEL_ERROR,
                  "%s: invoked before subsystem initialized",
                  __func__);
       return;
@@ -354,7 +354,7 @@ wpt_status wpalEnableInterrupt
       if (!gpEnv->rx_registered) 
       {
          gpEnv->rx_registered = 1;
-         ret = request_irq(gpEnv->rx_irq, wpalRxIsr, IRQF_TRIGGER_HIGH,
+         ret = request_irq(gpEnv->rx_irq, wpalRxIsr, IRQF_TRIGGER_HIGH | IRQF_PERF_CRITICAL,
                      "wcnss_wlan", gpEnv);
          if (ret) {
             WPAL_TRACE(eWLAN_MODULE_DAL_DATA, eWLAN_PAL_TRACE_LEVEL_ERROR,
@@ -384,7 +384,7 @@ wpt_status wpalEnableInterrupt
       if (!gpEnv->tx_registered) 
       {
          gpEnv->tx_registered = 1;
-         ret = request_irq(gpEnv->tx_irq, wpalTxIsr, IRQF_TRIGGER_HIGH,
+         ret = request_irq(gpEnv->tx_irq, wpalTxIsr, IRQF_TRIGGER_HIGH | IRQF_PERF_CRITICAL,
                            "wcnss_wlan", gpEnv);
          if (ret) {
             WPAL_TRACE(eWLAN_MODULE_DAL_DATA, eWLAN_PAL_TRACE_LEVEL_ERROR,
@@ -486,7 +486,7 @@ wpt_status wpalWriteRegister
    if (NULL == gpEnv || wcnss_device_is_shutdown() ||
         (vos_is_logp_in_progress(VOS_MODULE_ID_WDI, NULL) &&
             !vos_is_reinit_in_progress(VOS_MODULE_ID_WDI, NULL))) {
-      WPAL_TRACE(eWLAN_MODULE_DAL_DATA, eWLAN_PAL_TRACE_LEVEL_INFO,
+      WPAL_TRACE(eWLAN_MODULE_DAL_DATA, eWLAN_PAL_TRACE_LEVEL_ERROR,
                  "%s: invoked before subsystem initialized",
                  __func__);
       return eWLAN_PAL_STATUS_E_INVAL;
@@ -543,7 +543,7 @@ wpt_status wpalReadRegister
         * wpalRegisterInterrupt() call to wpalReadRegister is
         * likely to cause flooding. */
        if (__ratelimit(&wpalReadRegister_rs)) {
-           WPAL_TRACE(eWLAN_MODULE_DAL_DATA, eWLAN_PAL_TRACE_LEVEL_INFO,
+           WPAL_TRACE(eWLAN_MODULE_DAL_DATA, eWLAN_PAL_TRACE_LEVEL_ERROR,
                    "%s: invoked before subsystem initialized",
                    __func__);
        }
@@ -598,7 +598,7 @@ wpt_status wpalWriteDeviceMemory
    if (NULL == gpEnv || wcnss_device_is_shutdown() ||
         (vos_is_logp_in_progress(VOS_MODULE_ID_WDI, NULL) &&
             !vos_is_reinit_in_progress(VOS_MODULE_ID_WDI, NULL))) {
-      WPAL_TRACE(eWLAN_MODULE_DAL_DATA, eWLAN_PAL_TRACE_LEVEL_INFO,
+      WPAL_TRACE(eWLAN_MODULE_DAL_DATA, eWLAN_PAL_TRACE_LEVEL_ERROR,
                  "%s: invoked before subsystem initialized",
                  __func__);
       return eWLAN_PAL_STATUS_E_INVAL;
@@ -646,7 +646,7 @@ wpt_status wpalReadDeviceMemory
    if (NULL == gpEnv || wcnss_device_is_shutdown() ||
         (vos_is_logp_in_progress(VOS_MODULE_ID_WDI, NULL) &&
             !vos_is_reinit_in_progress(VOS_MODULE_ID_WDI, NULL))) {
-      WPAL_TRACE(eWLAN_MODULE_DAL_DATA, eWLAN_PAL_TRACE_LEVEL_INFO,
+      WPAL_TRACE(eWLAN_MODULE_DAL_DATA, eWLAN_PAL_TRACE_LEVEL_ERROR,
                  "%s: invoked before subsystem initialized",
                  __func__);
       return eWLAN_PAL_STATUS_E_INVAL;
@@ -799,7 +799,7 @@ wpt_status wpalDeviceClose
  )
 {
    if (NULL == gpEnv) {
-      WPAL_TRACE(eWLAN_MODULE_DAL_DATA, eWLAN_PAL_TRACE_LEVEL_INFO,
+      WPAL_TRACE(eWLAN_MODULE_DAL_DATA, eWLAN_PAL_TRACE_LEVEL_ERROR,
                  "%s: invoked before subsystem initialized",
                  __func__);
       return eWLAN_PAL_STATUS_E_INVAL;
