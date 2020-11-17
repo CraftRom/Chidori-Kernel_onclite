@@ -842,6 +842,17 @@ wpt_status wpalNotifySmsm
 {
    int rc;
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0))
+   struct device *dev = (struct device *)gContext.devHandle;
+
+   g_smem_state.tx_enable_state = qcom_smem_state_get(dev, "tx-enable",
+					&g_smem_state.tx_enable_state_bit);
+   if (IS_ERR(g_smem_state.tx_enable_state)) {
+      WPAL_TRACE(eWLAN_MODULE_DAL_DATA, eWLAN_PAL_TRACE_LEVEL_ERROR,
+                 "%s: qcom_smem_state_get failed", __func__);
+
+      return eWLAN_PAL_STATUS_E_FAILURE;
+   }
+
    rc =  qcom_smem_state_update_bits(g_smem_state.tx_enable_state,
                                      clrSt, setSt);
 #else
