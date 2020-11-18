@@ -87,14 +87,14 @@ static struct wcd_mbhc_config mbhc_cfg = {
 	.swap_gnd_mic = NULL,
 	.hs_ext_micbias = false,
 	.key_code[0] = KEY_MEDIA,
-        .key_code[1] = KEY_VOICECOMMAND,
 #if 1
-	.key_code[2] = BTN_1,
-	.key_code[3] = BTN_2,
+	.key_code[1] = BTN_1,
+	.key_code[2] = BTN_2,
 #else
-	.key_code[2] = KEY_VOLUMEUP,
-	.key_code[3] = KEY_VOLUMEDOWN,
+	.key_code[1] = KEY_VOLUMEUP,
+	.key_code[2] = KEY_VOLUMEDOWN,
 #endif
+	.key_code[3] = 0,
 	.key_code[4] = 0,
 	.key_code[5] = 0,
 	.key_code[6] = 0,
@@ -171,18 +171,24 @@ static void param_set_mask(struct snd_pcm_hw_params *p, int n,
 extern unsigned char aw87329_audio_kspk(void);
 extern unsigned char aw87329_audio_drcv(void);
 extern unsigned char aw87329_audio_off(void);
+
 static int aw87329_kspk_control = 0;
 static int aw87329_drcv_control = 0;
+
 static const char *const ext_kspk_amp_function[] = { "Off", "On" };
 static const char *const ext_drcv_amp_function[] = { "Off", "On" };
-static int ext_kspk_amp_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+
+static int ext_kspk_amp_get(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
 {
 	ucontrol->value.integer.value[0] = aw87329_kspk_control;
 	pr_err("%s: aw87329_kspk_control = %d\n", __func__,
 	aw87329_kspk_control);
 	return 0;
 }
-static int ext_kspk_amp_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+
+static int ext_kspk_amp_put(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
 {
 	if(ucontrol->value.integer.value[0] == aw87329_kspk_control)
 		return 1;
@@ -198,16 +204,18 @@ static int ext_kspk_amp_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	ucontrol->value.integer.value[0]);
 	return 0;
 }
+
 static int ext_drcv_amp_get(struct snd_kcontrol *kcontrol,
-struct snd_ctl_elem_value *ucontrol)
+			struct snd_ctl_elem_value *ucontrol)
 {
 	ucontrol->value.integer.value[0] = aw87329_drcv_control;
 	pr_err("%s: aw87329_drcv_control = %d\n", __func__,
 	aw87329_drcv_control);
 	return 0;
 }
+
 static int ext_drcv_amp_put(struct snd_kcontrol *kcontrol,
-struct snd_ctl_elem_value *ucontrol)
+			struct snd_ctl_elem_value *ucontrol)
 {
 	aw87329_drcv_control = ucontrol->value.integer.value[0];
 	if(ucontrol->value.integer.value[0] == aw87329_drcv_control)
@@ -1608,12 +1616,12 @@ static void *def_msm8952_wcd_mbhc_cal(void)
 	 */
 	btn_low[0] = 75;
 	btn_high[0] = 75;
-	btn_low[1] = 150;
-	btn_high[1] = 150;
-	btn_low[2] = 225;
-	btn_high[2] = 225;
-	btn_low[3] = 450;
-	btn_high[3] = 450;
+	btn_low[1] = 225;
+	btn_high[1] = 225;
+	btn_low[2] = 450;
+	btn_high[2] = 450;
+	btn_low[3] = 500;
+	btn_high[3] = 500;
 	btn_low[4] = 500;
 	btn_high[4] = 500;
 
@@ -3084,6 +3092,7 @@ static int msm8952_asoc_machine_probe(struct platform_device *pdev)
 	const char *type = NULL;
 	const char *ext_pa_str = NULL;
 	const char *spk_ext_pa = "qcom,msm-spk-ext-pa";
+	const char *spk_ext_pa_gpios = "qcom,msm-spk-ext-pa-gpios";
 	int num_strings;
 	int id, i, val;
 	int ret = 0;
@@ -3283,7 +3292,7 @@ parse_mclk_freq:
 	}
 
 	pdata->spk_ext_pa_gpio_p = of_parse_phandle(pdev->dev.of_node,
-							spk_ext_pa, 0);
+							spk_ext_pa_gpios, 0);
 
 	ret = is_us_eu_switch_gpio_support(pdev, pdata);
 	if (ret < 0) {
