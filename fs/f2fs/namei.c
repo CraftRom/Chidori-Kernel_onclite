@@ -319,9 +319,25 @@ static int f2fs_link(struct dentry *old_dentry, struct inode *dir,
 	struct f2fs_sb_info *sbi = F2FS_I_SB(dir);
 	int err;
 
-	if (f2fs_encrypted_inode(dir) &&
-			!fscrypt_has_permitted_context(dir, inode))
+	if (unlikely(f2fs_cp_error(sbi)))
+		return -EIO;
+	err = f2fs_is_checkpoint_ready(sbi);
+	if (err)
+		return err;
+
+	err = fscrypt_prepare_link(old_dentry, dir, dentry);
+	if (err)
+		return err;
+
+	if (is_inode_flag_set(dir, FI_PROJ_INHERIT) &&
+			(!projid_eq(F2FS_I(dir)->i_projid,
+			F2FS_I(old_dentry->d_inode)->i_projid)))
 		return -EXDEV;
+
+	err = dquot_initialize(dir);
+	if (err)
+		return err;
+
 	f2fs_balance_fs(sbi, true);
 
 	inode->i_ctime = current_time(inode);
@@ -828,9 +844,13 @@ static int f2fs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	if (err)
 		return err;
 
-	if ((old_dir != new_dir) && f2fs_encrypted_inode(new_dir) &&
-			!fscrypt_has_permitted_context(new_dir, old_inode)) {
-		err = -EXDEV;
+	if (is_inode_flag_set(new_dir, FI_PROJ_INHERIT) &&
+			(!projid_eq(F2FS_I(new_dir)->i_projid,
+			F2FS_I(old_dentry->d_inode)->i_projid)))
+		return -EXDEV;
+
+	err = dquot_initialize(old_dir);
+	if (err)
 		goto out;
 
 	err = dquot_initialize(new_dir);
@@ -1031,11 +1051,9 @@ static int f2fs_cross_rename(struct inode *old_dir, struct dentry *old_dentry,
 	if (err)
 		goto out;
 
-	if ((f2fs_encrypted_inode(old_dir) || f2fs_encrypted_inode(new_dir)) &&
-			(old_dir != new_dir) &&
-			(!fscrypt_has_permitted_context(new_dir, old_inode) ||
-			 !fscrypt_has_permitted_context(old_dir, new_inode)))
-		return -EXDEV;
+	err = dquot_initialize(new_dir);
+	if (err)
+		goto out;
 
 	err = -ENOENT;
 	old_entry = f2fs_find_entry(old_dir, &old_dentry->d_name, &old_page);
