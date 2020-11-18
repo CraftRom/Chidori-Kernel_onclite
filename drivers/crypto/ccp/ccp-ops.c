@@ -1195,7 +1195,7 @@ static int ccp_run_sha_cmd(struct ccp_cmd_queue *cmd_q, struct ccp_cmd *cmd)
 			break;
 		default:
 			ret = -EINVAL;
-			goto e_data;
+			goto e_ctx;
 		}
 	} else {
 		/* Stash the context */

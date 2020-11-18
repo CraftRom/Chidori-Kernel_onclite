@@ -352,22 +352,14 @@ void sched_clock_idle_sleep_event(void)
 EXPORT_SYMBOL_GPL(sched_clock_idle_sleep_event);
 
 /*
- * We just idled delta nanoseconds:
+ * We just idled delta nanoseconds (called with irqs disabled):
  */
 void sched_clock_idle_wakeup_event(u64 delta_ns)
 {
-	unsigned long flags;
-
-	if (sched_clock_stable())
+	if (timekeeping_suspended)
 		return;
 
-	if (unlikely(timekeeping_suspended))
-		return;
-
-	local_irq_save(flags);
 	sched_clock_tick();
-	local_irq_restore(flags);
-
 	touch_softlockup_watchdog_sched();
 }
 EXPORT_SYMBOL_GPL(sched_clock_idle_wakeup_event);
