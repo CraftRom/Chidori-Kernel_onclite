@@ -33,7 +33,6 @@ source "fs/ocfs2/Kconfig"
 source "fs/btrfs/Kconfig"
 source "fs/nilfs2/Kconfig"
 source "fs/f2fs/Kconfig"
-source "fs/exfat/Kconfig"
 
 config FS_DAX
 	bool "Direct Access (DAX) support"
@@ -126,6 +125,7 @@ if BLOCK
 menu "DOS/FAT/NT Filesystems"
 
 source "fs/fat/Kconfig"
+source "fs/sdfat/Kconfig"
 source "fs/ntfs/Kconfig"
 
 endmenu
