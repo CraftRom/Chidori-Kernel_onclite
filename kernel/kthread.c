@@ -828,7 +828,8 @@ void kthread_delayed_work_timer_fn(unsigned long __data)
 	/* Move the work from worker->delayed_work_list. */
 	WARN_ON_ONCE(list_empty(&work->node));
 	list_del_init(&work->node);
-	kthread_insert_work(worker, work, &worker->work_list);
+	if (!work->canceling)
+		kthread_insert_work(worker, work, &worker->work_list);
 
 	spin_unlock(&worker->lock);
 }
@@ -860,7 +861,6 @@ void __kthread_queue_delayed_work(struct kthread_worker *worker,
 
 	list_add(&work->node, &worker->delayed_work_list);
 	work->worker = worker;
-	timer_stats_timer_set_start_info(&dwork->timer);
 	timer->expires = jiffies + delay;
 	add_timer(timer);
 }
