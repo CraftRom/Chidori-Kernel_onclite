@@ -603,22 +603,26 @@ extern struct ratelimit_state dm_ratelimit_state;
 #define DM_MAPIO_REQUEUE	DM_ENDIO_REQUEUE
 #define DM_MAPIO_DELAY_REQUEUE	3
 
-#define dm_sector_div64(x, y)({ \
+#define dm_sector_div64(x, y)( \
+{ \
 	u64 _res; \
 	(x) = div64_u64_rem(x, y, &_res); \
 	_res; \
-})
+} \
+)
 
 /*
  * Ceiling(n / sz)
  */
 #define dm_div_up(n, sz) (((n) + (sz) - 1) / (sz))
 
-#define dm_sector_div_up(n, sz) ({ \
+#define dm_sector_div_up(n, sz) ( \
+{ \
 	sector_t _r = ((n) + (sz) - 1); \
 	sector_div(_r, (sz)); \
 	_r; \
-})
+} \
+)
 
 /*
  * ceiling(n / size) * size
@@ -643,13 +647,5 @@ static inline unsigned long to_bytes(sector_t n)
 {
 	return (n << SECTOR_SHIFT);
 }
-
-/*-----------------------------------------------------------------
- * Helper for block layer and dm core operations
- *-----------------------------------------------------------------
- */
-void dm_dispatch_request(struct request *rq);
-void dm_kill_unmapped_request(struct request *rq, int error);
-void dm_end_request(struct request *clone, int error);
 
 #endif	/* _LINUX_DEVICE_MAPPER_H */

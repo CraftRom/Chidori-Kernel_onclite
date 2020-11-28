@@ -167,7 +167,6 @@ struct devfreq {
 	struct list_head node;
 
 	struct mutex lock;
-	struct mutex sysfs_lock;
 	struct device dev;
 	struct devfreq_dev_profile *profile;
 	const struct devfreq_governor *governor;
@@ -182,8 +181,6 @@ struct devfreq {
 
 	unsigned long min_freq;
 	unsigned long max_freq;
-	bool is_boost_device;
-	bool max_boost;
 	bool stop_polling;
 
 	/* information for device frequency transition */
@@ -268,9 +265,6 @@ static inline int devfreq_update_stats(struct devfreq *df)
  *			the governor may consider slowing the frequency down.
  *			Specify 0 to use the default. Valid value = 0 to 100.
  *			downdifferential < upthreshold must hold.
- * @simple_scaling:	Setting this flag will scale the clocks up only if the
- *			load is above @upthreshold and will scale the clocks
- *			down only if the load is below @downdifferential.
  *
  * If the fed devfreq_simple_ondemand_data pointer is NULL to the governor,
  * the governor uses the default values.
@@ -278,7 +272,6 @@ static inline int devfreq_update_stats(struct devfreq *df)
 struct devfreq_simple_ondemand_data {
 	unsigned int upthreshold;
 	unsigned int downdifferential;
-	unsigned int simple_scaling;
 };
 #endif
 
@@ -314,8 +307,6 @@ struct devfreq_passive_data {
 	struct notifier_block nb;
 };
 #endif
-/* Caution: devfreq->lock must be locked before calling update_devfreq */
-extern int update_devfreq(struct devfreq *devfreq);
 
 #else /* !CONFIG_PM_DEVFREQ */
 static inline struct devfreq *devfreq_add_device(struct device *dev,
@@ -419,11 +410,6 @@ static inline struct devfreq *devfreq_get_devfreq_by_phandle(struct device *dev,
 }
 
 static inline int devfreq_update_stats(struct devfreq *df)
-{
-	return -EINVAL;
-}
-
-static inline int update_devfreq(struct devfreq *devfreq)
 {
 	return -EINVAL;
 }

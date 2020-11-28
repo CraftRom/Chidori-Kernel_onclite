@@ -67,7 +67,7 @@ void lkdtm_WARNING(void)
 
 void lkdtm_EXCEPTION(void)
 {
-	*((volatile int *) 0) = 0;
+	*((int *) 0) = 0;
 }
 
 void lkdtm_LOOP(void)
@@ -81,18 +81,12 @@ void lkdtm_OVERFLOW(void)
 	(void) recursive_loop(recur_count);
 }
 
-static noinline void __lkdtm_CORRUPT_STACK(void *stack)
-{
-	memset(stack, 'a', 64);
-}
-
 noinline void lkdtm_CORRUPT_STACK(void)
 {
 	/* Use default char array length that triggers stack protection. */
 	char data[8];
-	__lkdtm_CORRUPT_STACK(&data);
 
-	pr_info("Corrupted stack with '%16s'...\n", data);
+	memset((void *)data, 0, 64);
 }
 
 void lkdtm_UNALIGNED_LOAD_STORE_WRITE(void)

@@ -300,12 +300,6 @@ EXPORT_SYMBOL(sysctl_tcp_wmem);
 atomic_long_t tcp_memory_allocated;	/* Current allocated memory. */
 EXPORT_SYMBOL(tcp_memory_allocated);
 
-int sysctl_tcp_delack_seg __read_mostly = TCP_DELACK_SEG;
-EXPORT_SYMBOL(sysctl_tcp_delack_seg);
-
-int sysctl_tcp_use_userconfig __read_mostly;
-EXPORT_SYMBOL(sysctl_tcp_use_userconfig);
-
 /*
  * Current number of TCP sockets.
  */
@@ -393,7 +387,7 @@ void tcp_init_sock(struct sock *sk)
 
 	icsk->icsk_rto = TCP_TIMEOUT_INIT;
 	tp->mdev_us = jiffies_to_usecs(TCP_TIMEOUT_INIT);
-	minmax_reset(&tp->rtt_min, tcp_jiffies32, ~0U);
+	minmax_reset(&tp->rtt_min, tcp_time_stamp, ~0U);
 
 	/* So many TCP implementations out there (incorrectly) count the
 	 * initial SYN frame in their delayed-ACK and congestion control
@@ -677,9 +671,9 @@ static void tcp_push(struct sock *sk, int flags, int mss_now,
 	if (tcp_should_autocork(sk, skb, size_goal)) {
 
 		/* avoid atomic op if TSQ_THROTTLED bit is already set */
-		if (!test_bit(TSQ_THROTTLED, &sk->sk_tsq_flags)) {
+		if (!test_bit(TSQ_THROTTLED, &tp->tsq_flags)) {
 			NET_INC_STATS(sock_net(sk), LINUX_MIB_TCPAUTOCORKING);
-			set_bit(TSQ_THROTTLED, &sk->sk_tsq_flags);
+			set_bit(TSQ_THROTTLED, &tp->tsq_flags);
 		}
 		/* It is possible TX completion already happened
 		 * before we set TSQ_THROTTLED.
@@ -1469,11 +1463,8 @@ static void tcp_cleanup_rbuf(struct sock *sk, int copied)
 		   /* Delayed ACKs frequently hit locked sockets during bulk
 		    * receive. */
 		if (icsk->icsk_ack.blocked ||
-		/* Once-per-sysctl_tcp_delack_seg segments
-		 * ACK was not sent by tcp_input.c
-		 */
-		    tp->rcv_nxt - tp->rcv_wup > (icsk->icsk_ack.rcv_mss) *
-						sysctl_tcp_delack_seg ||
+		    /* Once-per-two-segments ACK was not sent by tcp_input.c */
+		    tp->rcv_nxt - tp->rcv_wup > icsk->icsk_ack.rcv_mss ||
 		    /*
 		     * If this read emptied read buffer, we send ACK, if
 		     * connection is not bidirectional, user drained

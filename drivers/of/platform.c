@@ -24,7 +24,6 @@
 #include <linux/of_device.h>
 #include <linux/of_irq.h>
 #include <linux/of_platform.h>
-#include <linux/of_reserved_mem.h>
 #include <linux/platform_device.h>
 
 const struct of_device_id of_default_bus_match_table[] = {
@@ -191,7 +190,6 @@ static struct platform_device *of_platform_device_create_pdata(
 	dev->dev.platform_data = platform_data;
 	of_dma_configure(&dev->dev, dev->dev.of_node);
 	of_msi_configure(&dev->dev, dev->dev.of_node);
-	of_reserved_mem_device_init_by_idx(&dev->dev, dev->dev.of_node, 0);
 
 	if (of_device_add(dev) != 0) {
 		of_dma_deconfigure(&dev->dev);
@@ -502,7 +500,7 @@ int of_platform_default_populate(struct device_node *root,
 }
 EXPORT_SYMBOL_GPL(of_platform_default_populate);
 
-#if !defined(CONFIG_PPC) && !defined(CONFIG_ARCH_MSM8953_BOOT_ORDERING)
+#ifndef CONFIG_PPC
 static int __init of_platform_default_populate_init(void)
 {
 	struct device_node *node;

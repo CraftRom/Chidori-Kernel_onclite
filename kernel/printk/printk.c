@@ -45,7 +45,6 @@
 #include <linux/utsname.h>
 #include <linux/ctype.h>
 #include <linux/uio.h>
-#include <soc/qcom/boot_stats.h>
 
 #include <asm/uaccess.h>
 #include <asm/sections.h>
@@ -2132,13 +2131,10 @@ void resume_console(void)
 {
 	if (!console_suspend_enabled)
 		return;
-	place_marker("M - System Resume Started");
 	down_console_sem();
 	console_suspended = 0;
 	console_unlock();
 }
-
-#ifdef CONFIG_CONSOLE_FLUSH_ON_HOTPLUG
 
 /**
  * console_cpu_notify - print deferred console messages after CPU hotplug
@@ -2164,8 +2160,6 @@ static int console_cpu_notify(struct notifier_block *self,
 	}
 	return NOTIFY_OK;
 }
-
-#endif
 
 /**
  * console_lock - lock the console system for exclusive use.
@@ -2815,9 +2809,7 @@ static int __init printk_late_init(void)
 				unregister_console(con);
 		}
 	}
-#ifdef CONFIG_CONSOLE_FLUSH_ON_HOTPLUG
 	hotcpu_notifier(console_cpu_notify, 0);
-#endif
 	return 0;
 }
 late_initcall(printk_late_init);

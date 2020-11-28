@@ -124,7 +124,6 @@ void power_supply_changed(struct power_supply *psy)
 }
 EXPORT_SYMBOL_GPL(power_supply_changed);
 
-static int psy_register_cooler(struct device *dev, struct power_supply *psy);
 /*
  * Notify that power supply was registered after parent finished the probing.
  *
@@ -132,8 +131,6 @@ static int psy_register_cooler(struct device *dev, struct power_supply *psy);
  * calling power_supply_changed() directly from power_supply_register()
  * would lead to execution of get_property() function provided by the driver
  * too early - before the probe ends.
- * Also, registering cooling device from the probe will execute the
- * get_property() function. So register the cooling device after the probe.
  *
  * Avoid that by waiting on parent's mutex.
  */
@@ -150,7 +147,6 @@ static void power_supply_deferred_register_work(struct work_struct *work)
 		}
 	}
 
-	psy_register_cooler(psy->dev.parent, psy);
 	power_supply_changed(psy);
 
 	if (psy->dev.parent)
@@ -675,7 +671,7 @@ static struct thermal_cooling_device_ops psy_tcd_ops = {
 	.set_cur_state = ps_set_cur_charge_cntl_limit,
 };
 
-static int psy_register_cooler(struct device *dev, struct power_supply *psy)
+static int psy_register_cooler(struct power_supply *psy)
 {
 	int i;
 
@@ -683,13 +679,7 @@ static int psy_register_cooler(struct device *dev, struct power_supply *psy)
 	for (i = 0; i < psy->desc->num_properties; i++) {
 		if (psy->desc->properties[i] ==
 				POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT) {
-			if (dev)
-				psy->tcd = thermal_of_cooling_device_register(
-							dev_of_node(dev),
-							(char *)psy->desc->name,
-							psy, &psy_tcd_ops);
-			else
-				psy->tcd = thermal_cooling_device_register(
+			psy->tcd = thermal_cooling_device_register(
 							(char *)psy->desc->name,
 							psy, &psy_tcd_ops);
 			return PTR_ERR_OR_ZERO(psy->tcd);
@@ -714,7 +704,7 @@ static void psy_unregister_thermal(struct power_supply *psy)
 {
 }
 
-static int psy_register_cooler(struct device *dev, struct power_supply *psy)
+static int psy_register_cooler(struct power_supply *psy)
 {
 	return 0;
 }
@@ -786,6 +776,10 @@ __power_supply_register(struct device *parent,
 	if (rc)
 		goto register_thermal_failed;
 
+	rc = psy_register_cooler(psy);
+	if (rc)
+		goto register_cooler_failed;
+
 	rc = power_supply_create_triggers(psy);
 	if (rc)
 		goto create_triggers_failed;
@@ -809,6 +803,8 @@ __power_supply_register(struct device *parent,
 	return psy;
 
 create_triggers_failed:
+	psy_unregister_cooler(psy);
+register_cooler_failed:
 	psy_unregister_thermal(psy);
 register_thermal_failed:
 	device_del(dev);

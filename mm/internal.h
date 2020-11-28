@@ -1,7 +1,6 @@
 /* internal.h: mm/ internal definitions
  *
  * Copyright (C) 2004 Red Hat, Inc. All Rights Reserved.
- * Copyright (C) 2020 XiaoMi, Inc.
  * Written by David Howells (dhowells@redhat.com)
  *
  * This program is free software; you can redistribute it and/or
@@ -41,33 +40,8 @@ void page_writeback_init(void);
 
 int do_swap_page(struct fault_env *fe, pte_t orig_pte);
 
-#ifdef CONFIG_SPECULATIVE_PAGE_FAULT
-extern struct vm_area_struct *get_vma(struct mm_struct *mm,
-				      unsigned long addr);
-extern void put_vma(struct vm_area_struct *vma);
-
-static inline bool vma_has_changed(struct fault_env *fe)
-{
-	int ret = RB_EMPTY_NODE(&fe->vma->vm_rb);
-	unsigned int seq = READ_ONCE(fe->vma->vm_sequence.sequence);
-
-	/*
-	 * Matches both the wmb in write_seqlock_{begin,end}() and
-	 * the wmb in vma_rb_erase().
-	 */
-	smp_rmb();
-
-	return ret || seq != fe->sequence;
-}
-#endif /* CONFIG_SPECULATIVE_PAGE_FAULT */
-
 void free_pgtables(struct mmu_gather *tlb, struct vm_area_struct *start_vma,
 		unsigned long floor, unsigned long ceiling);
-
-static inline bool can_madv_dontneed_vma(struct vm_area_struct *vma)
-{
-	return !(vma->vm_flags & (VM_LOCKED|VM_HUGETLB|VM_PFNMAP));
-}
 
 void unmap_page_range(struct mmu_gather *tlb,
 			     struct vm_area_struct *vma,
@@ -112,6 +86,7 @@ extern unsigned long highest_memmap_pfn;
  */
 extern int isolate_lru_page(struct page *page);
 extern void putback_lru_page(struct page *page);
+extern bool pgdat_reclaimable(struct pglist_data *pgdat);
 
 /*
  * in mm/rmap.c:
@@ -229,7 +204,7 @@ unsigned long
 isolate_migratepages_range(struct compact_control *cc,
 			   unsigned long low_pfn, unsigned long end_pfn);
 int find_suitable_fallback(struct free_area *area, unsigned int order,
-			int migratetype, bool only_stealable, bool *can_steal, unsigned int start_order);
+			int migratetype, bool only_stealable, bool *can_steal);
 
 #endif
 

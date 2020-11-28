@@ -191,13 +191,17 @@ int fdt_add_mem_rsv(void *fdt, uint64_t address, uint64_t size)
 int fdt_del_mem_rsv(void *fdt, int n)
 {
 	struct fdt_reserve_entry *re = _fdt_mem_rsv_w(fdt, n);
+	int err;
 
 	FDT_RW_CHECK_HEADER(fdt);
 
 	if (n >= fdt_num_mem_rsv(fdt))
 		return -FDT_ERR_NOTFOUND;
 
-	return _fdt_splice_mem_rsv(fdt, re, 1, 0);
+	err = _fdt_splice_mem_rsv(fdt, re, 1, 0);
+	if (err)
+		return err;
+	return 0;
 }
 
 static int _fdt_resize_property(void *fdt, int nodeoffset, const char *name,
@@ -207,7 +211,7 @@ static int _fdt_resize_property(void *fdt, int nodeoffset, const char *name,
 	int err;
 
 	*prop = fdt_get_property_w(fdt, nodeoffset, name, &oldlen);
-	if (!*prop)
+	if (! (*prop))
 		return oldlen;
 
 	if ((err = _fdt_splice_struct(fdt, (*prop)->data, FDT_TAGALIGN(oldlen),
@@ -283,8 +287,7 @@ int fdt_setprop(void *fdt, int nodeoffset, const char *name,
 	if (err)
 		return err;
 
-	if (len)
-		memcpy(prop->data, val, len);
+	memcpy(prop->data, val, len);
 	return 0;
 }
 
@@ -323,7 +326,7 @@ int fdt_delprop(void *fdt, int nodeoffset, const char *name)
 	FDT_RW_CHECK_HEADER(fdt);
 
 	prop = fdt_get_property_w(fdt, nodeoffset, name, &len);
-	if (!prop)
+	if (! prop)
 		return len;
 
 	proplen = sizeof(*prop) + FDT_TAGALIGN(len);

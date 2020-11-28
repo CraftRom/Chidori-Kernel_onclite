@@ -29,10 +29,8 @@
 
 static DECLARE_HASHTABLE(uid_hash_table, UID_HASH_BITS);
 
-/* task->time_in_state */
-static  __cacheline_aligned_in_smp DEFINE_SPINLOCK(task_time_in_state_lock);
-/* uid_hash_table */
-static __cacheline_aligned_in_smp DEFINE_SPINLOCK(uid_lock);
+static DEFINE_SPINLOCK(task_time_in_state_lock); /* task->time_in_state */
+static DEFINE_SPINLOCK(uid_lock); /* uid_hash_table */
 
 struct concurrent_times {
 	atomic64_t active[NR_CPUS];

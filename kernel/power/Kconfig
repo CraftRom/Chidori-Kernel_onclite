@@ -77,33 +77,6 @@ config HIBERNATION
 
 	  For more information take a look at <file:Documentation/power/swsusp.txt>.
 
-config HIBERNATION_IMAGE_REUSE
-	bool "Reuse hibernation image"
-	depends on HIBERNATION
-	---help---
-	  By default this hibernation image is erased after either a
-	  successful or unsuccessful hibernation restore sequeunce. Since
-	  filesystem contents on disk are not part of the hibernation
-	  image, failure to create a new hibernation image every boot can
-	  lead to filesystem corruption.
-
-	  Conversely, if the usecase can guarantee that the filesystem is
-	  not ever modified, the same hibernation image can be reused. This
-	  prevents creating additional hibernation images unncesarily.
-
-	  For more details, refer to the description of CONFIG_HIBERNATION
-	  for booting without resuming.
-
-config HIBERNATION_SKIP_CRC
-	bool "Skip LZO image CRC check"
-	default n
-	depends on HIBERNATION
-	---help---
-	  Some filesystem devices may have hw based integrity checks. In this
-	  scenario, repeating the integrity check in software is unnecessary
-	  and wasteful. This config option has no effect if uncompressed
-	  hibernation images are used.
-
 config ARCH_SAVE_PAGE_KEYS
 	bool
 
@@ -340,27 +313,3 @@ config PM_GENERIC_DOMAINS_OF
 
 config CPU_PM
 	bool
-
-config SUSPEND_DEBUG
-	bool "Enable snapshot of regulator and tlmm when suspend"
-	depends on SUSPEND
-	default n
-	help
-	  This allows you to dump the regulator state and tlmm configuration
-	  before suspend. It doesn't work only if you have read the system
-	  file node /sys/privae/tlmm_before_sleep and vreg_before_sleep
-	
-config ENERGY_MODEL
-	bool "Energy Model for CPUs"
-	depends on SMP
-	depends on CPU_FREQ
-	default n
-	help
-	  Several subsystems (thermal and/or the task scheduler for example)
-	  can leverage information about the energy consumed by CPUs to make
-	  smarter decisions. This config option enables the framework from
-	  which subsystems can access the energy models.
-
-	  The exact usage of the energy model is subsystem-dependent.
-
-	  If in doubt, say N.

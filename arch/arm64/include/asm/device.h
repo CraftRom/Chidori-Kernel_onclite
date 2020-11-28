@@ -17,24 +17,14 @@
 #define __ASM_DEVICE_H
 
 struct dev_archdata {
-	const struct dma_map_ops *dma_ops;
+	struct dma_map_ops *dma_ops;
 #ifdef CONFIG_IOMMU_API
 	void *iommu;			/* private IOMMU data */
 #endif
 	bool dma_coherent;
-#ifdef CONFIG_ARM64_DMA_USE_IOMMU
-	struct dma_iommu_mapping	*mapping;
-#endif
 };
 
 struct pdev_archdata {
-	u64 dma_mask;
 };
-
-#ifdef CONFIG_ARM64_DMA_USE_IOMMU
-#define to_dma_iommu_mapping(dev) ((dev)->archdata.mapping)
-#else
-#define to_dma_iommu_mapping(dev) NULL
-#endif
 
 #endif

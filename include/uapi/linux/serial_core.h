@@ -270,7 +270,4 @@
 /* MPS2 UART */
 #define PORT_MPS2UART	116
 
-/* QTI EUD UART */
-#define PORT_EUD_UART	117
-
 #endif /* _UAPILINUX_SERIAL_CORE_H */

@@ -24,45 +24,13 @@
 
 int sysctl_tcp_thin_linear_timeouts __read_mostly;
 
-static void set_tcp_default(void)
-{
-	sysctl_tcp_delack_seg = TCP_DELACK_SEG;
-}
-
-/*sysctl handler for tcp_ack realted master control */
-int tcp_proc_delayed_ack_control(struct ctl_table *table, int write,
-				 void __user *buffer, size_t *length,
-				 loff_t *ppos)
-{
-	int ret = proc_dointvec_minmax(table, write, buffer, length, ppos);
-
-	/* The ret value will be 0 if the input validation is successful
-	 * and the values are written to sysctl table. If not, the stack
-	 * will continue to work with currently configured values
-	 */
-	return ret;
-}
-
-/*sysctl handler for tcp_ack realted master control */
-int tcp_use_userconfig_sysctl_handler(struct ctl_table *table, int write,
-				      void __user *buffer, size_t *length,
-				      loff_t *ppos)
-{
-	int ret = proc_dointvec_minmax(table, write, buffer, length, ppos);
-
-	if (write && ret == 0) {
-		if (!sysctl_tcp_use_userconfig)
-			set_tcp_default();
-	}
-	return ret;
-}
-
 /**
  *  tcp_write_err() - close socket and save error info
  *  @sk:  The socket the error has appeared on.
  *
  *  Returns: Nothing (void)
  */
+
 static void tcp_write_err(struct sock *sk)
 {
 	sk->sk_err = sk->sk_err_soft ? : ETIMEDOUT;
@@ -103,7 +71,7 @@ static int tcp_out_of_resources(struct sock *sk, bool do_reset)
 
 	/* If peer does not open window for long time, or did not transmit
 	 * anything for long time, penalize it. */
-	if ((s32)(tcp_jiffies32 - tp->lsndtime) > 2*TCP_RTO_MAX || !do_reset)
+	if ((s32)(tcp_time_stamp - tp->lsndtime) > 2*TCP_RTO_MAX || !do_reset)
 		shift++;
 
 	/* If some dubious ICMP arrived, penalize even more. */
@@ -113,7 +81,7 @@ static int tcp_out_of_resources(struct sock *sk, bool do_reset)
 	if (tcp_check_oom(sk, shift)) {
 		/* Catch exceptional cases, when connection requires reset.
 		 *      1. Last segment was sent recently. */
-		if ((s32)(tcp_jiffies32 - tp->lsndtime) <= TCP_TIMEWAIT_LEN ||
+		if ((s32)(tcp_time_stamp - tp->lsndtime) <= TCP_TIMEWAIT_LEN ||
 		    /*  2. Window is closed. */
 		    (!tp->snd_wnd && !tp->packets_out))
 			do_reset = true;
@@ -162,7 +130,7 @@ static void tcp_mtu_probing(struct inet_connection_sock *icsk, struct sock *sk)
 	if (net->ipv4.sysctl_tcp_mtu_probing) {
 		if (!icsk->icsk_mtup.enabled) {
 			icsk->icsk_mtup.enabled = 1;
-			icsk->icsk_mtup.probe_timestamp = tcp_jiffies32;
+			icsk->icsk_mtup.probe_timestamp = tcp_time_stamp;
 			tcp_sync_mss(sk, icsk->icsk_pmtu_cookie);
 		} else {
 			struct net *net = sock_net(sk);
@@ -359,7 +327,7 @@ static void tcp_delack_timer(unsigned long data)
 		inet_csk(sk)->icsk_ack.blocked = 1;
 		__NET_INC_STATS(sock_net(sk), LINUX_MIB_DELAYEDACKLOCKED);
 		/* deleguate our work to tcp_release_cb() */
-		if (!test_and_set_bit(TCP_DELACK_TIMER_DEFERRED, &sk->sk_tsq_flags))
+		if (!test_and_set_bit(TCP_DELACK_TIMER_DEFERRED, &tcp_sk(sk)->tsq_flags))
 			sock_hold(sk);
 	}
 	bh_unlock_sock(sk);
@@ -500,7 +468,7 @@ void tcp_retransmit_timer(struct sock *sk)
 					    tp->snd_una, tp->snd_nxt);
 		}
 #endif
-		if (tcp_jiffies32 - tp->rcv_tstamp > TCP_RTO_MAX) {
+		if (tcp_time_stamp - tp->rcv_tstamp > TCP_RTO_MAX) {
 			tcp_write_err(sk);
 			goto out;
 		}
@@ -537,13 +505,14 @@ void tcp_retransmit_timer(struct sock *sk)
 
 	tcp_enter_loss(sk);
 
-	icsk->icsk_retransmits++;
 	if (tcp_retransmit_skb(sk, tcp_write_queue_head(sk), 1) > 0) {
 		/* Retransmission failed because of local congestion,
-		 * Let senders fight for local resources conservatively.
+		 * do not backoff.
 		 */
+		if (!icsk->icsk_retransmits)
+			icsk->icsk_retransmits = 1;
 		inet_csk_reset_xmit_timer(sk, ICSK_TIME_RETRANS,
-					  TCP_RESOURCE_PROBE_INTERVAL,
+					  min(icsk->icsk_rto, TCP_RESOURCE_PROBE_INTERVAL),
 					  TCP_RTO_MAX);
 		goto out;
 	}
@@ -564,6 +533,7 @@ void tcp_retransmit_timer(struct sock *sk)
 	 * the 120 second clamps though!
 	 */
 	icsk->icsk_backoff++;
+	icsk->icsk_retransmits++;
 
 out_reset_timer:
 	/* If stream is thin, use linear timeouts. Since 'icsk_backoff' is
@@ -640,7 +610,7 @@ static void tcp_write_timer(unsigned long data)
 		tcp_write_timer_handler(sk);
 	} else {
 		/* delegate our work to tcp_release_cb() */
-		if (!test_and_set_bit(TCP_WRITE_TIMER_DEFERRED, &sk->sk_tsq_flags))
+		if (!test_and_set_bit(TCP_WRITE_TIMER_DEFERRED, &tcp_sk(sk)->tsq_flags))
 			sock_hold(sk);
 	}
 	bh_unlock_sock(sk);
@@ -757,7 +727,4 @@ void tcp_init_xmit_timers(struct sock *sk)
 {
 	inet_csk_init_xmit_timers(sk, &tcp_write_timer, &tcp_delack_timer,
 				  &tcp_keepalive_timer);
-	hrtimer_init(&tcp_sk(sk)->pacing_timer, CLOCK_MONOTONIC,
-		     HRTIMER_MODE_ABS_PINNED);
-	tcp_sk(sk)->pacing_timer.function = tcp_pace_kick;
 }

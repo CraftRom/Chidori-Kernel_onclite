@@ -2,7 +2,6 @@
  * drivers/base/power/wakeup.c - System wakeup events framework
  *
  * Copyright (c) 2010 Rafael J. Wysocki <rjw@sisk.pl>, Novell Inc.
- * Copyright (C) 2020 XiaoMi, Inc.
  *
  * This file is released under the GPLv2.
  */
@@ -18,8 +17,6 @@
 #include <linux/pm_wakeirq.h>
 #include <linux/types.h>
 #include <trace/events/power.h>
-#include <linux/irq.h>
-#include <linux/irqdesc.h>
 
 #include "power.h"
 
@@ -819,9 +816,8 @@ void pm_get_active_wakeup_sources(char *pending_wakeup_source, size_t max)
 	struct wakeup_source *ws, *last_active_ws = NULL;
 	int len = 0;
 	bool active = false;
-	int srcuidx;
 
-	srcuidx = srcu_read_lock(&wakeup_srcu);
+	rcu_read_lock();
 	list_for_each_entry_rcu(ws, &wakeup_sources, entry) {
 		if (ws->active && len < max) {
 			if (!active)
@@ -842,7 +838,7 @@ void pm_get_active_wakeup_sources(char *pending_wakeup_source, size_t max)
 				"Last active Wakeup Source: %s",
 				last_active_ws->name);
 	}
-	srcu_read_unlock(&wakeup_srcu, srcuidx);
+	rcu_read_unlock();
 }
 EXPORT_SYMBOL_GPL(pm_get_active_wakeup_sources);
 
@@ -918,21 +914,7 @@ void pm_wakeup_clear(void)
 
 void pm_system_irq_wakeup(unsigned int irq_number)
 {
-	struct irq_desc *desc;
-	const char *name = "null";
-
 	if (pm_wakeup_irq == 0) {
-		if (msm_show_resume_irq_mask) {
-			desc = irq_to_desc(irq_number);
-			if (desc == NULL)
-				name = "stray irq";
-			else if (desc->action && desc->action->name)
-				name = desc->action->name;
-
-			pr_warn("%s: %d triggered %s\n", __func__,
-					irq_number, name);
-
-		}
 		pm_wakeup_irq = irq_number;
 		pm_system_wakeup();
 	}
@@ -1079,75 +1061,32 @@ static int print_wakeup_source_stats(struct seq_file *m,
 	return 0;
 }
 
-static void *wakeup_sources_stats_seq_start(struct seq_file *m,
-					loff_t *pos)
+/**
+ * wakeup_sources_stats_show - Print wakeup sources statistics information.
+ * @m: seq_file to print the statistics into.
+ */
+static int wakeup_sources_stats_show(struct seq_file *m, void *unused)
 {
 	struct wakeup_source *ws;
-	loff_t n = *pos;
-	int *srcuidx = m->private;
+	int srcuidx;
 
-	if (n == 0) {
-		seq_puts(m, "name\t\tactive_count\tevent_count\twakeup_count\t"
-			"expire_count\tactive_since\ttotal_time\tmax_time\t"
-			"last_change\tprevent_suspend_time\n");
-	}
+	seq_puts(m, "name\t\t\t\t\tactive_count\tevent_count\twakeup_count\t"
+		"expire_count\tactive_since\ttotal_time\tmax_time\t"
+		"last_change\tprevent_suspend_time\n");
 
-	*srcuidx = srcu_read_lock(&wakeup_srcu);
-	list_for_each_entry_rcu(ws, &wakeup_sources, entry) {
-		if (n-- <= 0)
-			return ws;
-	}
+	srcuidx = srcu_read_lock(&wakeup_srcu);
+	list_for_each_entry_rcu(ws, &wakeup_sources, entry)
+		print_wakeup_source_stats(m, ws);
+	srcu_read_unlock(&wakeup_srcu, srcuidx);
 
-	return NULL;
-}
-
-static void *wakeup_sources_stats_seq_next(struct seq_file *m,
-					void *v, loff_t *pos)
-{
-	struct wakeup_source *ws = v;
-	struct wakeup_source *next_ws = NULL;
-
-	++(*pos);
-
-	list_for_each_entry_continue_rcu(ws, &wakeup_sources, entry) {
-		next_ws = ws;
-		break;
-	}
-
-	return next_ws;
-}
-
-static void wakeup_sources_stats_seq_stop(struct seq_file *m, void *v)
-{
-	int *srcuidx = m->private;
-
-	srcu_read_unlock(&wakeup_srcu, *srcuidx);
-}
-
-/**
- * wakeup_sources_stats_seq_show - Print wakeup sources statistics information.
- * @m: seq_file to print the statistics into.
- * @v: wakeup_source of each iteration
- */
-static int wakeup_sources_stats_seq_show(struct seq_file *m, void *v)
-{
-	struct wakeup_source *ws = v;
-
-	print_wakeup_source_stats(m, ws);
+	print_wakeup_source_stats(m, &deleted_ws);
 
 	return 0;
 }
 
-static const struct seq_operations wakeup_sources_stats_seq_ops = {
-	.start = wakeup_sources_stats_seq_start,
-	.next  = wakeup_sources_stats_seq_next,
-	.stop  = wakeup_sources_stats_seq_stop,
-	.show  = wakeup_sources_stats_seq_show,
-};
-
 static int wakeup_sources_stats_open(struct inode *inode, struct file *file)
 {
-	return seq_open_private(file, &wakeup_sources_stats_seq_ops, sizeof(int));
+	return single_open(file, wakeup_sources_stats_show, NULL);
 }
 
 static const struct file_operations wakeup_sources_stats_fops = {
@@ -1155,7 +1094,7 @@ static const struct file_operations wakeup_sources_stats_fops = {
 	.open = wakeup_sources_stats_open,
 	.read = seq_read,
 	.llseek = seq_lseek,
-	.release = seq_release_private,
+	.release = single_release,
 };
 
 static int __init wakeup_sources_debugfs_init(void)
