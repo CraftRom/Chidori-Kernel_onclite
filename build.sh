@@ -58,4 +58,3 @@ make normal &>/dev/null
 echo "Flashable zip generated under $ZIP_DIR."
 cd ..
 # Build end
-
