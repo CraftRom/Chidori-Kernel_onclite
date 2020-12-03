@@ -693,7 +693,6 @@ static const struct apsd_result *smblib_update_usb_type(struct smb_charger *chg)
 			}
 	}
 
-	//smblib_dbg(chg, PR_MISC, "APSD=%s PD=%d\n",
 	//				apsd_result->name, chg->pd_active);
 	smblib_err(chg, "lct v02 battery charge APSD=%s PD=%d\n",
 					apsd_result->name, chg->pd_active);
