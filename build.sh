@@ -31,7 +31,7 @@ make	O=out $CONFIG
 make	\
 	O=out \
 	ARCH=arm64 \
-	CC="ccache clang" \
+	CC="clang" \
 	AR=llvm-ar \
 	NM=llvm-nm \
 	LD=ld.lld \
@@ -50,7 +50,6 @@ make	\
 
 if ! [ -a $KERN_IMG ]; then
     echo "Build error!"
-    exit 1
 fi
 
 cd $ZIP_DIR
