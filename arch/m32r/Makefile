@@ -7,7 +7,7 @@
 
 KBUILD_DEFCONFIG := m32700ut.smp_defconfig
 
-KBUILD_LDFLAGS		:=
+LDFLAGS		:=
 OBJCOPYFLAGS	:= -O binary -R .note -R .comment -S
 LDFLAGS_vmlinux	:=
 

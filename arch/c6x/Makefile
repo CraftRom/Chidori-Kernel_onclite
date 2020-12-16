@@ -23,7 +23,8 @@ ifdef CONFIG_CPU_BIG_ENDIAN
 KBUILD_CFLAGS   += -mbig-endian
 KBUILD_AFLAGS   += -mbig-endian
 LINKFLAGS       += -mbig-endian
-KBUILD_LDFLAGS  += -mbig-endian -EB
+KBUILD_LDFLAGS  += -mbig-endian
+LDFLAGS += -EB
 endif
 
 head-y          := arch/c6x/kernel/head.o

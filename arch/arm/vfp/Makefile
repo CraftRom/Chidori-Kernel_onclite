@@ -8,7 +8,7 @@
 # asflags-y := -DDEBUG
 
 KBUILD_AFLAGS	:=$(KBUILD_AFLAGS:-msoft-float=-Wa,-mfpu=softvfp+vfp -mfloat-abi=soft)
-KBUILD_LDFLAGS		+=--no-warn-mismatch
+LDFLAGS		+=--no-warn-mismatch
 
 obj-y			+= vfp.o
 

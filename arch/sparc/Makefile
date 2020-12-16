@@ -20,7 +20,7 @@ ifeq ($(CONFIG_SPARC32),y)
 #
 
 CHECKFLAGS     += -D__sparc__
-KBUILD_LDFLAGS := -m elf32_sparc
+LDFLAGS        := -m elf32_sparc
 export BITS    := 32
 UTS_MACHINE    := sparc
 
@@ -39,7 +39,7 @@ else
 #
 
 CHECKFLAGS    += -D__sparc__ -D__sparc_v9__ -D__arch64__ -m64
-KBUILD_LDFLAGS := -m elf64_sparc
+LDFLAGS       := -m elf64_sparc
 export BITS   := 64
 UTS_MACHINE   := sparc64
 

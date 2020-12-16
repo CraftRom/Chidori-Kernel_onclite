@@ -41,7 +41,7 @@ CPUFLAGS-1 += $(call cc-option,-mcpu=v$(CPU_VER))
 # r31 holds current when in kernel mode
 KBUILD_CFLAGS += -ffixed-r31 $(CPUFLAGS-1) $(CPUFLAGS-2)
 
-KBUILD_LDFLAGS		:=
+LDFLAGS		:=
 LDFLAGS_vmlinux	:=
 
 head-y := arch/microblaze/kernel/head.o

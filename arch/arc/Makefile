@@ -75,7 +75,7 @@ KBUILD_CFLAGS_MODULE	+= -mlong-calls -mno-millicode
 # Finally dump eveything into kernel build system
 KBUILD_CFLAGS	+= $(cflags-y)
 KBUILD_AFLAGS	+= $(KBUILD_CFLAGS)
-KBUILD_LDFLAGS	+= $(ldflags-y)
+LDFLAGS		+= $(ldflags-y)
 
 head-y		:= arch/arc/kernel/head.o
 
