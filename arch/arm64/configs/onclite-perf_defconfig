@@ -1380,7 +1380,7 @@ CONFIG_SIMTRAY_STATUS=y
 # FingerprintCard fingerprint driver
 #
 # CONFIG_FPR_FPC is not set
-# CONFIG_HQ_SYSFS_SUPPORT is not set
+CONFIG_HQ_SYSFS_SUPPORT=y
 
 #
 # SCSI device support
