@@ -43,7 +43,7 @@ LDFLAGS_vmlinux	+= --fix-cortex-a53-843419
 else
   ifeq ($(ld-name),gold)
 # Pass --no-fix-cortex-a53-843419 to ensure the erratum fix is disabled
-LDFLAGS	+= --no-fix-cortex-a53-843419
+KBUILD_LDFLAGS	+= --no-fix-cortex-a53-843419
   endif
 endif
 
@@ -83,13 +83,7 @@ ifeq ($(CONFIG_COMPAT_VDSO), y)
     export CONFIG_VDSO32 := y
     vdso32 := -DCONFIG_VDSO32=1
   else ifeq ($(shell which $(CROSS_COMPILE_ARM32)$(cc-name) 2> /dev/null),)
-    ifeq ($(shell which $(CC_ARM32) 2> /dev/null),)
-      $(error $(CROSS_COMPILE_ARM32)$(cc-name) not found, check CROSS_COMPILE_ARM32)
-    else
-      export CROSS_COMPILE_ARM32
-      export CONFIG_VDSO32 := y
-      vdso32 := -DCONFIG_VDSO32=1
-    endif
+    $(error $(CROSS_COMPILE_ARM32)$(cc-name) not found, check CROSS_COMPILE_ARM32)
   else
     export CROSS_COMPILE_ARM32
     export CONFIG_VDSO32 := y
@@ -233,7 +227,7 @@ prepare: vdso_prepare
 vdso_prepare: prepare0
 	$(Q)$(MAKE) $(build)=arch/arm64/kernel/vdso include/generated/vdso-offsets.h
 	$(if $(CONFIG_VDSO32),$(Q)$(MAKE) $(build)=arch/arm64/kernel/vdso32 \
-                                          include/generated/vdso32-offsets.h)
+					  include/generated/vdso32-offsets.h)
 endif
 
 define archhelp
@@ -247,3 +241,4 @@ define archhelp
   echo  '                  (distribution) /sbin/installkernel or'
   echo  '                  install to $$(INSTALL_PATH) and run lilo'
 endef
+

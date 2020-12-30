@@ -18,8 +18,8 @@ git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/
 git clone https://github.com/CraftRom/AnyKernel3 -b android-11
 
 # Download Clang
-if [ ! -d clang ]; then
-git clone https://github.com/kdrag0n/proton-clang clang/proton/ --depth=1
+if [ ! -d clang ~/toolchains/proton-clang]; then
+git clone https://github.com/kdrag0n/proton-clang ~/toolchains/proton-clang --depth=1
 fi
 
 # Download libufdt
