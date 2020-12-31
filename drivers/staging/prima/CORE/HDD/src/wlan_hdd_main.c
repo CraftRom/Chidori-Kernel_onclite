@@ -3892,6 +3892,203 @@ int hdd_get_disable_ch_list(hdd_context_t *hdd_ctx, tANI_U8 *buf,
 	return len;
 }
 
+#ifdef FEATURE_WLAN_SW_PTA
+static void hdd_sco_resp_callback(uint8_t sco_status)
+{
+	hdd_context_t *hdd_ctx = NULL;
+	v_CONTEXT_t vos_ctx = NULL;
+
+	vos_ctx = vos_get_global_context(VOS_MODULE_ID_SYS, NULL);
+	if (!vos_ctx) {
+		hddLog(VOS_TRACE_LEVEL_FATAL,
+		       "%s: Global VOS context is Null", __func__);
+		return;
+	}
+
+	/* Get the HDD context. */
+	hdd_ctx = (hdd_context_t*)vos_get_context(VOS_MODULE_ID_HDD, vos_ctx);
+	if (!hdd_ctx) {
+		hddLog(VOS_TRACE_LEVEL_FATAL,
+		       "%s: HDD context is Null", __func__);
+		return;
+	}
+
+	hddLog(VOS_TRACE_LEVEL_DEBUG, "%s: Response status %d",
+	       __func__, sco_status);
+
+	if (sco_status) {
+		hddLog(VOS_TRACE_LEVEL_FATAL, "%s: Invalid sco status %d",
+		       __func__, sco_status);
+		return;
+	}
+
+	complete(&hdd_ctx->sw_pta_comp);
+}
+
+int hdd_process_bt_sco_profile(hdd_context_t *hdd_ctx,
+			       bool bt_enabled, bool bt_sco)
+{
+	tpAniSirGlobal mac_ctx = PMAC_STRUCT(hdd_ctx->hHal);
+	uint8_t no_of_states_changed = 0;
+	hdd_station_ctx_t *hdd_sta_ctx;
+	eConnectionState conn_state;
+	hdd_adapter_t *adapter;
+	eHalStatus hal_status;
+	bool sco_status;
+	int rc;
+
+	if (!mac_ctx) {
+		hddLog(VOS_TRACE_LEVEL_ERROR, "%s: mac_ctx got NULL", __func__);
+		return -EINVAL;
+	}
+
+	/**
+	 * At a time only one status can be changed compared to
+	 * previous command (BT_ENABLED/SCO)
+	 * If no.of states changed is greater than one it is
+	 * an invalid command.
+	 */
+	if (bt_enabled != hdd_ctx->is_bt_enabled)
+		no_of_states_changed++;
+
+	if (bt_sco != hdd_ctx->is_sco_enabled)
+		no_of_states_changed++;
+
+	if (no_of_states_changed > 1) {
+		hddLog(VOS_TRACE_LEVEL_ERROR, "%s: Multiple states changed",
+		       __func__);
+		return -EINVAL;
+	}
+
+	INIT_COMPLETION(hdd_ctx->sw_pta_comp);
+
+	if (bt_enabled != hdd_ctx->is_bt_enabled) {
+		hal_status = sme_bt_req(hdd_ctx->hHal,
+					hdd_sco_resp_callback,
+					adapter->sessionId, bt_enabled);
+		if (!HAL_STATUS_SUCCESS(hal_status)) {
+			hddLog(VOS_TRACE_LEVEL_ERROR,
+			       "%s: Error sending sme sco indication request",
+			       __func__);
+			return -EINVAL;
+		}
+
+		rc = wait_for_completion_timeout(&hdd_ctx->sw_pta_comp,
+				msecs_to_jiffies(WLAN_WAIT_TIME_SW_PTA));
+		if (!rc) {
+			hddLog(VOS_TRACE_LEVEL_ERROR,
+			       FL("Target response timed out for sw_pta_comp"));
+			return -EINVAL;
+		}
+
+		hdd_ctx->is_bt_enabled = bt_enabled;
+		return 0;
+	}
+
+	if (bt_sco) {
+		if (hdd_ctx->is_sco_enabled) {
+			hddLog(VOS_TRACE_LEVEL_ERROR,
+			       "%s: BT SCO is already enabled", __func__);
+			return 0;
+		}
+		sco_status = true;
+	} else {
+		if (!hdd_ctx->is_sco_enabled) {
+			hddLog(VOS_TRACE_LEVEL_ERROR,
+			       "%s: BT SCO is already disabled", __func__);
+			return 0;
+		}
+		sco_status = false;
+	}
+
+	hal_status = sme_sco_req(hdd_ctx->hHal,
+				 hdd_sco_resp_callback,
+				 adapter->sessionId, sco_status);
+	if (!HAL_STATUS_SUCCESS(hal_status)) {
+		hddLog(VOS_TRACE_LEVEL_ERROR,
+		       "%s: Error sending sme sco indication request",
+		       __func__);
+		return -EINVAL;
+	}
+
+	rc = wait_for_completion_timeout(&hdd_ctx->sw_pta_comp,
+			msecs_to_jiffies(WLAN_WAIT_TIME_SW_PTA));
+	if (!rc) {
+		hddLog(VOS_TRACE_LEVEL_ERROR,
+		       FL("Target response timed out for sw_pta_comp"));
+		return -EINVAL;
+	}
+
+	if (!bt_sco) {
+		hdd_ctx->is_sco_enabled = false;
+		mac_ctx->isCoexScoIndSet = 0;
+		return 0;
+	}
+
+	adapter = hdd_get_adapter(hdd_ctx, WLAN_HDD_INFRA_STATION);
+	if (!adapter) {
+		hddLog(VOS_TRACE_LEVEL_ERROR,
+		       "%s: No station adapter to enable bt sco", __func__);
+		return -EINVAL;
+	}
+
+	hdd_sta_ctx = WLAN_HDD_GET_STATION_CTX_PTR(adapter);
+	if (!hdd_sta_ctx) {
+		hddLog(VOS_TRACE_LEVEL_ERROR,
+		       "%s: No station context to enable bt sco", __func__);
+		return -EINVAL;
+	}
+
+	if (wlan_hdd_scan_abort(adapter)) {
+		hddLog(VOS_TRACE_LEVEL_ERROR, "%s: Error aborting scan request",
+		       __func__);
+		return -EINVAL;
+	}
+
+	hdd_ctx->is_sco_enabled = true;
+	mac_ctx->isCoexScoIndSet = 1;
+
+	conn_state = hdd_sta_ctx->conn_info.connState;
+	if (eConnectionState_Connecting == conn_state ||
+	    smeNeighborMiddleOfRoaming(hdd_sta_ctx) ||
+	    (eConnectionState_Associated == conn_state &&
+	      sme_is_sta_key_exchange_in_progress(hdd_ctx->hHal,
+						  adapter->sessionId)))
+		sme_abortConnection(hdd_ctx->hHal,
+				    adapter->sessionId);
+
+	if (hdd_connIsConnected(hdd_sta_ctx)) {
+		hal_status = sme_teardown_link_with_ap(mac_ctx,
+						       adapter->sessionId);
+		if (!HAL_STATUS_SUCCESS(hal_status)) {
+			hddLog(VOS_TRACE_LEVEL_ERROR,
+			       "%s: Error while Teardown link wih AP",
+			       __func__);
+			return -EINVAL;
+		}
+	}
+
+	return 0;
+}
+
+static void hdd_init_sw_pta(hdd_context_t *hdd_ctx)
+{
+	init_completion(&hdd_ctx->sw_pta_comp);
+}
+
+static void hdd_deinit_sw_pta(hdd_context_t *hdd_ctx)
+{
+	complete(&hdd_ctx->sw_pta_comp);
+}
+#else
+static void hdd_init_sw_pta(hdd_context_t *hdd_ctx)
+{
+}
+static void hdd_deinit_sw_pta(hdd_context_t *hdd_ctx)
+{
+}
+#endif
+
 static int hdd_driver_command(hdd_adapter_t *pAdapter,
                               hdd_priv_data_t *ppriv_data)
 {
@@ -12354,6 +12551,7 @@ void hdd_wlan_exit(hdd_context_t *pHddCtx)
       wlan_hdd_ftm_close(pHddCtx);
       goto free_hdd_ctx;
    }
+   hdd_deinit_sw_pta(pHddCtx);
 
    /* DeRegister with platform driver as client for Suspend/Resume */
    vosStatus = hddDeregisterPmOps(pHddCtx);
@@ -14474,6 +14672,8 @@ int hdd_wlan_startup(struct device *dev )
    hdd_assoc_registerFwdEapolCB(pVosContext);
 
    mutex_init(&pHddCtx->cache_channel_lock);
+
+   hdd_init_sw_pta(pHddCtx);
    goto success;
 
 err_open_cesium_nl_sock:

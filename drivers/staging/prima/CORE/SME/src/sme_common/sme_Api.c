@@ -15450,6 +15450,40 @@ static eHalStatus sme_prepare_mgmt_tx(tHalHandle hal, uint8_t session_id,
     return status;
 }
 
+#ifdef FEATURE_WLAN_SW_PTA
+eHalStatus sme_teardown_link_with_ap(tpAniSirGlobal mac, uint8_t session_id)
+{
+	eHalStatus status = eHAL_STATUS_SUCCESS;
+	struct sir_teardown_link *msg;
+	vos_msg_t vos_message = {0};
+	VOS_STATUS vos_status;
+
+	MTRACE(vos_trace(VOS_MODULE_ID_SME,
+	       TRACE_CODE_SME_TX_HDD_TEARDOWN_LINK_WITH_AP, session_id, 0));
+
+	status = sme_AcquireGlobalLock(&mac->sme);
+	if (HAL_STATUS_SUCCESS(status)) {
+		msg = vos_mem_malloc(sizeof(*msg));
+		if (!msg) {
+			status = eHAL_STATUS_FAILED_ALLOC;
+		} else {
+			msg->type = eWNI_SME_TEARDOWN_LINK_WITH_AP;
+			msg->session_id = session_id;
+			vos_message.bodyptr = msg;
+			vos_message.type =  eWNI_SME_TEARDOWN_LINK_WITH_AP;
+			vos_status = vos_mq_post_message(VOS_MQ_ID_PE,
+							 &vos_message);
+			if (!VOS_IS_STATUS_SUCCESS(vos_status)) {
+				vos_mem_free(msg);
+				status = eHAL_STATUS_FAILURE;
+			}
+		}
+		sme_ReleaseGlobalLock(&mac->sme);
+	}
+	return status;
+}
+#endif
+
 eHalStatus sme_send_mgmt_tx(tHalHandle hal, uint8_t session_id,
                             const uint8_t *buf, uint32_t len)
 {
@@ -15586,4 +15620,44 @@ eHalStatus sme_update_olpc_mode(tHalHandle hHal, bool enable)
     return eHAL_STATUS_SUCCESS;
 }
 
+		smsLog(mac, LOG1, "Posting sw pta request to csr queue");
+		sme_cmd->command = eSmeCommandSwPTAReq;
+		sme_cmd->sessionId = session_id;
+		sme_cmd->u.sw_pta_req = sw_pta_req;
 
+		if (!HAL_STATUS_SUCCESS(csrQueueSmeCommand(mac,
+					sme_cmd, TRUE))) {
+			VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_ERROR,
+				  FL("failed queueing sme command"));
+			sme_ReleaseGlobalLock(&mac->sme);
+			csrReleaseCommand(mac, sme_cmd);
+			vos_mem_free(sw_pta_req);
+			return eHAL_STATUS_FAILURE;
+		}
+	} else {
+		smsLog(mac, LOGE, FL("sme_AcquireGlobalLock failed"));
+		csrReleaseCommand(mac, sme_cmd);
+		vos_mem_free(sw_pta_req);
+		return eHAL_STATUS_FAILURE;
+	}
+
+	sme_ReleaseGlobalLock(&mac->sme);
+	return eHAL_STATUS_SUCCESS;
+}
+
+eHalStatus sme_sco_req(tHalHandle hal,
+		       void (*resp_callback)(uint8_t resp_status),
+		       uint8_t session_id, uint8_t req_status)
+{
+	return sme_sw_pta_req(hal, resp_callback, session_id,
+			      SCO_STATUS, sizeof(req_status), &req_status);
+}
+
+eHalStatus sme_bt_req(tHalHandle hal,
+		      void (*resp_callback)(uint8_t resp_status),
+		      uint8_t session_id, uint8_t req_status)
+{
+	return sme_sw_pta_req(hal, resp_callback, session_id,
+			      BT_STATUS, sizeof(req_status), &req_status);
+}
+#endif /* FEATURE_WLAN_SW_PTA */
