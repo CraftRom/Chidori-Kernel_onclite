@@ -10,8 +10,8 @@ sudo apt install bc bash git-core gnupg build-essential \
     m4 gcc libtool zlib1g-dev flex bison libssl-dev
 
 # Clone toolchain
-git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 -b android-11.0.0_r25 --depth=1 stock
-git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9 -b android-11.0.0_r25 --depth=1 stock_32
+git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 -b android-11.0.0_r28 --depth=1 stock
+git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9 -b android-11.0.0_r28 --depth=1 stock_32
 
 
 # Clone AnyKernel3
@@ -24,7 +24,7 @@ fi
 
 # Download libufdt
 if [ ! -d libufdt ]; then
-    wget https://android.googlesource.com/platform/system/libufdt/+archive/refs/tags/android-11.0.0_r25/utils.tar.gz
+    wget https://android.googlesource.com/platform/system/libufdt/+archive/refs/tags/android-11.0.0_r28/utils.tar.gz
     mkdir -p libufdt
     tar xvzf utils.tar.gz -C libufdt
     rm utils.tar.gz
