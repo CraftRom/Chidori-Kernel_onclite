@@ -66,7 +66,7 @@ static unsigned int counter_delta(struct kgsl_device *device,
 
 static struct devfreq_msm_adreno_tz_data adreno_tz_data = {
 	.bus = {
-		.max = 350,
+		.max = 900,
 	},
 	.device_id = KGSL_DEVICE_3D0,
 };
@@ -1184,7 +1184,7 @@ static int adreno_of_get_power(struct adreno_device *adreno_dev,
 		device->pwrctrl.pm_qos_wakeup_latency = 100;
 
 	if (of_property_read_u32(node, "qcom,idle-timeout", &timeout))
-		timeout = 80;
+		timeout = 64;
 
 	device->pwrctrl.interval_timeout = msecs_to_jiffies(timeout);
 

@@ -72,7 +72,7 @@ walt_dec_cfs_rq_stats(struct cfs_rq *cfs_rq, struct task_struct *p) {}
 
 /*
  * Targeted preemption latency for CPU-bound tasks:
- * (default: 6ms * (1 + ilog(ncpus)), units: nanoseconds)
+ * (default: 5ms * (1 + ilog(ncpus)), units: nanoseconds)
  *
  * NOTE: this latency value is not the same as the concept of
  * 'timeslice length' - timeslices in CFS are of variable length
@@ -82,8 +82,8 @@ walt_dec_cfs_rq_stats(struct cfs_rq *cfs_rq, struct task_struct *p) {}
  * (to see the precise effective timeslice length of your workload,
  *  run vmstat and monitor the context-switches (cs) field)
  */
-unsigned int sysctl_sched_latency = 6000000ULL;
-unsigned int normalized_sysctl_sched_latency = 6000000ULL;
+unsigned int sysctl_sched_latency = 5000000ULL;
+unsigned int normalized_sysctl_sched_latency = 5000000ULL;
 
 unsigned int sysctl_sched_is_big_little = 1;
 unsigned int sysctl_sched_sync_hint_enable = 1;
@@ -103,20 +103,19 @@ unsigned int sysctl_sched_use_walt_task_util = 1;
  * SCHED_TUNABLESCALING_LOG - scaled logarithmical, *1+ilog(ncpus)
  * SCHED_TUNABLESCALING_LINEAR - scaled linear, *ncpus
  */
-enum sched_tunable_scaling sysctl_sched_tunable_scaling
-	= SCHED_TUNABLESCALING_LOG;
+enum sched_tunable_scaling sysctl_sched_tunable_scaling = SCHED_TUNABLESCALING_NONE;
 
 /*
  * Minimal preemption granularity for CPU-bound tasks:
  * (default: 0.75 msec * (1 + ilog(ncpus)), units: nanoseconds)
  */
-unsigned int sysctl_sched_min_granularity = 750000ULL;
-unsigned int normalized_sysctl_sched_min_granularity = 750000ULL;
+unsigned int sysctl_sched_min_granularity		= 400000ULL;
+unsigned int normalized_sysctl_sched_min_granularity	= 400000ULL;
 
 /*
  * is kept at sysctl_sched_latency / sysctl_sched_min_granularity
  */
-static unsigned int sched_nr_latency = 8;
+static unsigned int sched_nr_latency = 10;
 
 /*
  * After fork, child runs first. If set to 0 (default) then
@@ -132,10 +131,11 @@ unsigned int sysctl_sched_child_runs_first __read_mostly;
  * and reduces their over-scheduling. Synchronous workloads will still
  * have immediate wakeup/sleep latencies.
  */
-unsigned int sysctl_sched_wakeup_granularity = 1000000UL;
-unsigned int normalized_sysctl_sched_wakeup_granularity = 1000000UL;
+unsigned int sysctl_sched_wakeup_granularity		= 2000000UL;
+unsigned int normalized_sysctl_sched_wakeup_granularity	= 2000000UL;
 
-const_debug unsigned int sysctl_sched_migration_cost = 500000UL;
+const_debug unsigned int sysctl_sched_migration_cost	= 5000000UL;
+DEFINE_PER_CPU_READ_MOSTLY(int, sched_load_boost);
 
 /*
  * The exponential sliding  window over which load is averaged for shares
@@ -4335,8 +4335,8 @@ static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
 		qcfs_rq->h_nr_running -= task_delta;
 		walt_dec_throttled_cfs_rq_stats(&qcfs_rq->walt_stats, cfs_rq);
 		walt_propagate_cumulative_runnable_avg(
-				   &qcfs_rq->cumulative_runnable_avg,
-				   cfs_rq->cumulative_runnable_avg, false);
+				   &qcfs_rq->walt_stats.cumulative_runnable_avg,
+				   cfs_rq->walt_stats.cumulative_runnable_avg, false);
 
 		if (qcfs_rq->load.weight)
 			dequeue = 0;
@@ -4346,8 +4346,8 @@ static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
 		sub_nr_running(rq, task_delta);
 		walt_dec_throttled_cfs_rq_stats(&rq->walt_stats, cfs_rq);
 		walt_propagate_cumulative_runnable_avg(
-				   &rq->cumulative_runnable_avg,
-				   cfs_rq->cumulative_runnable_avg, false);
+				   &rq->walt_stats.cumulative_runnable_avg,
+				   cfs_rq->walt_stats.cumulative_runnable_avg, false);
 	}
 
 	cfs_rq->throttled = 1;
@@ -4412,8 +4412,8 @@ void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
 		cfs_rq->h_nr_running += task_delta;
 		walt_inc_throttled_cfs_rq_stats(&cfs_rq->walt_stats, tcfs_rq);
 		walt_propagate_cumulative_runnable_avg(
-				   &cfs_rq->cumulative_runnable_avg,
-				   tcfs_rq->cumulative_runnable_avg, true);
+				   &cfs_rq->walt_stats.cumulative_runnable_avg,
+				   tcfs_rq->walt_stats.cumulative_runnable_avg, true);
 
 		if (cfs_rq_throttled(cfs_rq))
 			break;
@@ -4423,8 +4423,8 @@ void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
 		add_nr_running(rq, task_delta);
 		walt_inc_throttled_cfs_rq_stats(&rq->walt_stats, tcfs_rq);
 		walt_propagate_cumulative_runnable_avg(
-				   &rq->cumulative_runnable_avg,
-				   tcfs_rq->cumulative_runnable_avg, true);
+				   &rq->walt_stats.cumulative_runnable_avg,
+				   tcfs_rq->walt_stats.cumulative_runnable_avg, true);
 	}
 
 	/* determine whether we need to wake up potentially idle cpu */
@@ -4888,7 +4888,7 @@ static void walt_fixup_cumulative_runnable_avg_fair(struct rq *rq,
 	for_each_sched_entity(se) {
 		cfs_rq = cfs_rq_of(se);
 
-		cfs_rq->cumulative_runnable_avg += task_load_delta;
+		cfs_rq->walt_stats.cumulative_runnable_avg += task_load_delta;
 		if (cfs_rq_throttled(cfs_rq))
 			break;
 	}
@@ -6274,7 +6274,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p,
 		prev_eff_load *= load + effective_load(tg, prev_cpu, 0, weight);
 	}
 
-	balanced = this_eff_load <= prev_eff_load;
+	balanced = this_eff_load <= prev_eff_load ? this_cpu : nr_cpumask_bits;
 
 	schedstat_inc(p->se.statistics.nr_wakeups_affine_attempts);
 
@@ -6856,7 +6856,7 @@ static int select_idle_sibling(struct task_struct *p, int prev, int target)
 {
 	struct sched_domain *sd;
 	struct sched_group *sg;
-	int i = task_cpu(p);
+	int i = task_cpu(p),  recent_used_cpu;
 	int best_idle_cpu = -1;
 	int best_idle_cstate = INT_MAX;
 	unsigned long best_idle_capacity = ULONG_MAX;
@@ -6877,7 +6877,23 @@ static int select_idle_sibling(struct task_struct *p, int prev, int target)
 		if (i != target && cpus_share_cache(i, target) && idle_cpu(i)) {
 			schedstat_inc(p->se.statistics.nr_wakeups_sis_cache_affine);
 			schedstat_inc(this_rq()->eas_stats.sis_cache_affine);
-			return i;
+			return idle_cpu(prev) ? prev : i;
+		}
+
+		/* Check a recently used CPU as a potential idle candidate */
+		recent_used_cpu = p->recent_used_cpu;
+		if (recent_used_cpu != prev &&
+	    		recent_used_cpu != target &&
+	    		cpus_share_cache(recent_used_cpu, target) &&
+	    		idle_cpu(recent_used_cpu) &&
+	    		cpumask_test_cpu(p->recent_used_cpu, &p->cpus_allowed)) {
+				
+			 /*
+		 	  * Replace recent_used_cpu with prev as it is a potential
+		 	  * candidate for the next wake.
+		  	  */
+			 p->recent_used_cpu = prev;
+			return recent_used_cpu;
 		}
 
 		sd = rcu_dereference(per_cpu(sd_llc, target));
@@ -7270,10 +7286,16 @@ retry:
 			}
 
 			/*
-			 * Favor CPUs with smaller capacity for Non latency
-			 * sensitive tasks.
+			 * Enforce EAS mode
+			 *
+			 * For non latency sensitive tasks, skip CPUs that
+			 * will be overutilized by moving the task there.
+			 *
+			 * The goal here is to remain in EAS mode as long as
+			 * possible at least for !prefer_idle tasks.
 			 */
-			if (capacity_orig > target_capacity)
+			if ((new_util * capacity_margin) >
+			    (capacity_orig * SCHED_CAPACITY_SCALE))
 				continue;
 
 			/*
@@ -7826,8 +7848,7 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 
 	if (affine_sd) {
 		sd = NULL; /* Prefer wake_affine over balance flags */
-		if (cpu != prev_cpu && wake_affine(affine_sd, p, prev_cpu, sync))
-			new_cpu = cpu;
+		new_cpu = wake_affine(affine_sd, p, prev_cpu, sync);
 	}
 
 	if (sd && !(sd_flag & SD_BALANCE_FORK)) {
@@ -7842,6 +7863,8 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	if (!sd) {
 		if (sd_flag & SD_BALANCE_WAKE) /* XXX always ? */
 			new_cpu = select_idle_sibling(p, prev_cpu, new_cpu);
+			if (want_affine)
+				current->recent_used_cpu = cpu;
 
 	} else {
 		new_cpu = find_idlest_cpu(sd, p, cpu, prev_cpu, sd_flag);

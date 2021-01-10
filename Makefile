@@ -1,6 +1,6 @@
 VERSION = 4
 PATCHLEVEL = 9
-SUBLEVEL = 248
+SUBLEVEL = 250
 EXTRAVERSION =
 NAME = Roaring Lionus
 
@@ -402,11 +402,13 @@ LD              = $(CC_DIR)ld.lld
 ld-name		= lld
 LDGOLD		= $(CROSS_COMPILE)ld.gold
 CPP		= $(CC) -E
-AR		= $(CC_DIR)llvm-ar
-NM		= $(CC_DIR)llvm-nm
-STRIP		= $(CC_DIR)llvm-strip
-OBJCOPY		= $(CC_DIR)llvm-objcopy
-OBJDUMP		= $(CC_DIR)llvm-objdump
+AR		= $(CROSS_COMPILE)ar
+NM		= $(CROSS_COMPILE)nm
+STRIP		= $(CROSS_COMPILE)strip
+OBJCOPY		= $(CROSS_COMPILE)objcopy
+OBJDUMP		= $(CROSS_COMPILE)objdump
+LEX		= flex
+YACC		= bison
 AWK		= awk
 GENKSYMS	= scripts/genksyms/genksyms
 INSTALLKERNEL  := installkernel
@@ -475,7 +477,7 @@ export VERSION PATCHLEVEL SUBLEVEL KERNELRELEASE KERNELVERSION
 
 export ARCH SRCARCH CONFIG_SHELL HOSTCC HOSTCFLAGS CROSS_COMPILE AS LD CC
 export CPP AR NM STRIP OBJCOPY OBJDUMP HOSTLDFLAGS HOST_LOADLIBES
-export MAKE AWK GENKSYMS INSTALLKERNEL PERL PYTHON UTS_MACHINE
+export MAKE LEX YACC AWK GENKSYMS INSTALLKERNEL PERL PYTHON UTS_MACHINE
 export HOSTCXX HOSTCXXFLAGS LDFLAGS_MODULE CHECK CHECKFLAGS
 
 export KBUILD_CPPFLAGS NOSTDINC_FLAGS LINUXINCLUDE OBJCOPYFLAGS KBUILD_LDFLAGS LDFLAGS
@@ -750,6 +752,10 @@ endif
 endif
 endif
 
+ifdef CONFIG_CC_WERROR
+KBUILD_CFLAGS	+= -Werror
+endif
+
 # Tell gcc to never replace conditional load with a non-conditional one
 KBUILD_CFLAGS	+= $(call cc-option,--param=allow-store-data-races=0)
 KBUILD_CFLAGS	+= $(call cc-option,-fno-allow-store-data-races)
@@ -810,6 +816,9 @@ KBUILD_CFLAGS += $(call cc-option, -Wno-undefined-optimized)
 KBUILD_CFLAGS += $(call cc-option, -Wno-tautological-constant-out-of-range-compare)
 KBUILD_CFLAGS += $(call cc-option, -mllvm -disable-struct-const-merge)
 KBUILD_CFLAGS += $(call cc-option, -Wno-sometimes-uninitialized)
+KBUILD_CFLAGS += -Wno-asm-operand-widths
+KBUILD_CFLAGS += -Wno-initializer-overrides
+KBUILD_CFLAGS += -fno-builtin
 
 # Quiet clang warning: comparison of unsigned expression < 0 is always false
 
@@ -858,7 +867,9 @@ KBUILD_CFLAGS  += -ftrivial-auto-var-init=zero
 KBUILD_CFLAGS  += -enable-trivial-auto-var-init-zero-knowing-it-will-be-removed-from-clang
 endif
 
-KBUILD_CFLAGS   += $(call cc-option, -fno-var-tracking-assignments)
+# Workaround for GCC versions < 5.0
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61801
+KBUILD_CFLAGS   += $(call gcc-ifversion, -lt, 0500, $(call cc-option, -fno-var-tracking-assignments))
 
 ifdef CONFIG_DEBUG_INFO
 ifdef CONFIG_DEBUG_INFO_SPLIT

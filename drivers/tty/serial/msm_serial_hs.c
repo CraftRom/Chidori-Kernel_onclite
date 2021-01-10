@@ -2789,6 +2789,7 @@ static int uartdm_init_port(struct uart_port *uport)
 	struct msm_hs_port *msm_uport = UARTDM_TO_MSM(uport);
 	struct msm_hs_tx *tx = &msm_uport->tx;
 	struct msm_hs_rx *rx = &msm_uport->rx;
+	struct sched_param param = { .sched_priority = 1 };
 
 	init_waitqueue_head(&rx->wait);
 	init_waitqueue_head(&tx->wait);
@@ -2803,6 +2804,8 @@ static int uartdm_init_port(struct uart_port *uport)
 		MSM_HS_ERR("%s(): error creating task", __func__);
 		goto exit_lh_init;
 	}
+	sched_setscheduler(rx->task, SCHED_FIFO, &param);
+
 	kthread_init_work(&rx->kwork, msm_serial_hs_rx_work);
 
 	kthread_init_worker(&tx->kworker);
@@ -2812,6 +2815,7 @@ static int uartdm_init_port(struct uart_port *uport)
 		MSM_HS_ERR("%s(): error creating task", __func__);
 		goto exit_lh_init;
 	}
+	sched_setscheduler(tx->task, SCHED_FIFO, &param);
 
 	kthread_init_work(&tx->kwork, msm_serial_hs_tx_work);
 
@@ -3517,7 +3521,7 @@ static int msm_hs_probe(struct platform_device *pdev)
 		msm_uport->pclk = NULL;
 
 	msm_uport->hsuart_wq = alloc_workqueue("k_hsuart",
-					WQ_UNBOUND | WQ_MEM_RECLAIM, 1);
+					WQ_UNBOUND | WQ_POWER_EFFICIENT | WQ_HIGHPRI | WQ_MEM_RECLAIM, 1);
 	if (!msm_uport->hsuart_wq) {
 		MSM_HS_ERR("%s(): Unable to create workqueue hsuart_wq\n",
 								__func__);

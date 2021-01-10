@@ -2072,14 +2072,20 @@ static long ipa3_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			break;
 		}
 
-		if (ep_info.max_ep_pairs != QUERY_MAX_EP_PAIRS)
+		if (ep_info.max_ep_pairs != QUERY_MAX_EP_PAIRS) {
 			IPAERR_RL("unexpected max_ep_pairs %d\n",
 			ep_info.max_ep_pairs);
+			retval = -EFAULT;
+			break;
+		}
 
-		if (ep_info.ep_pair_size !=
-			(QUERY_MAX_EP_PAIRS * sizeof(struct ipa_ep_pair_info)))
+		if (ep_info.ep_pair_size != (QUERY_MAX_EP_PAIRS *
+			sizeof(struct ipa_ep_pair_info))) {
 			IPAERR_RL("unexpected ep_pair_size %d\n",
 			ep_info.max_ep_pairs);
+			retval = -EFAULT;
+			break;
+		}
 
 		uptr = ep_info.info;
 		if (unlikely(!uptr)) {
@@ -4179,8 +4185,6 @@ void ipa3_inc_acquire_wakelock(void)
 
 	spin_lock_irqsave(&ipa3_ctx->wakelock_ref_cnt.spinlock, flags);
 	ipa3_ctx->wakelock_ref_cnt.cnt++;
-	if (ipa3_ctx->wakelock_ref_cnt.cnt == 1)
-		__pm_stay_awake(&ipa3_ctx->w_lock);
 	IPADBG_LOW("active wakelock ref cnt = %d\n",
 		ipa3_ctx->wakelock_ref_cnt.cnt);
 	spin_unlock_irqrestore(&ipa3_ctx->wakelock_ref_cnt.spinlock, flags);
@@ -4202,8 +4206,6 @@ void ipa3_dec_release_wakelock(void)
 	ipa3_ctx->wakelock_ref_cnt.cnt--;
 	IPADBG_LOW("active wakelock ref cnt = %d\n",
 		ipa3_ctx->wakelock_ref_cnt.cnt);
-	if (ipa3_ctx->wakelock_ref_cnt.cnt == 0)
-		__pm_relax(&ipa3_ctx->w_lock);
 	spin_unlock_irqrestore(&ipa3_ctx->wakelock_ref_cnt.spinlock, flags);
 }
 
@@ -7120,6 +7122,7 @@ int ipa3_pci_drv_probe(
 	struct ipa_api_controller *api_ctrl,
 	const struct of_device_id *pdrv_match)
 {
+#ifdef CONFIG_PCI
 	int result;
 	struct ipa3_plat_drv_res *ipa_drv_res;
 	u32 bar0_offset;
@@ -7273,6 +7276,9 @@ int ipa3_pci_drv_probe(
 	}
 
 	return result;
+#else
+	return -EOPNOTSUPP;
+#endif
 }
 
 /*

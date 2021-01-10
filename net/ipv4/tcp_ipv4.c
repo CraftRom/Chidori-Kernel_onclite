@@ -84,7 +84,7 @@
 #include <crypto/hash.h>
 #include <linux/scatterlist.h>
 
-int sysctl_tcp_tw_reuse __read_mostly;
+int sysctl_tcp_tw_reuse __read_mostly=1;
 int sysctl_tcp_low_latency __read_mostly;
 
 #ifdef CONFIG_TCP_MD5SIG
@@ -2490,7 +2490,7 @@ static int __net_init tcp_sk_init(struct net *net)
 
 	net->ipv4.sysctl_tcp_syn_retries = TCP_SYN_RETRIES;
 	net->ipv4.sysctl_tcp_synack_retries = TCP_SYNACK_RETRIES;
-	net->ipv4.sysctl_tcp_syncookies = 1;
+	net->ipv4.sysctl_tcp_syncookies = 0;
 	net->ipv4.sysctl_tcp_reordering = TCP_FASTRETRANS_THRESH;
 	net->ipv4.sysctl_tcp_retries1 = TCP_RETR1;
 	net->ipv4.sysctl_tcp_retries2 = TCP_RETR2;

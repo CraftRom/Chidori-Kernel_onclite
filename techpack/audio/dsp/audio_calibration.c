@@ -1,4 +1,4 @@
-/* Copyright (c) 2014, 2016-2017 The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014, 2016-2017, 2020, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -593,12 +593,16 @@ struct miscdevice audio_cal_misc = {
 	.fops	= &audio_cal_fops,
 };
 
+#ifndef MODULE
+static
+#endif
 int __init audio_cal_init(void)
 {
 	int i = 0;
 
 	pr_debug("%s\n", __func__);
 
+	cal_utils_init();
 	memset(&audio_cal, 0, sizeof(audio_cal));
 	mutex_init(&audio_cal.common_lock);
 	for (; i < MAX_CAL_TYPES; i++) {
@@ -609,7 +613,12 @@ int __init audio_cal_init(void)
 	return misc_register(&audio_cal_misc);
 }
 
-void audio_cal_exit(void)
+#ifdef MODULE
+void
+#else
+static void __exit
+#endif
+audio_cal_exit(void)
 {
 	int i = 0;
 	struct list_head *ptr, *next;
@@ -627,11 +636,15 @@ void audio_cal_exit(void)
 			client_info_node = NULL;
 		}
 	}
+#ifdef MODULE
 	misc_deregister(&audio_cal_misc);
+#endif
 }
 
+#ifndef MODULE
 subsys_initcall(audio_cal_init);
 module_exit(audio_cal_exit);
+#endif
 
 MODULE_DESCRIPTION("SoC QDSP6v2 Audio Calibration driver");
 MODULE_LICENSE("GPL v2");
