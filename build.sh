@@ -31,8 +31,10 @@ make	O=out $CONFIG
 make	\
 	O=out \
 	ARCH=arm64 \
-	CC="clang" \
+	CC=clang \
+	CXX=clang++ \
 	AR=llvm-ar \
+	AS=llvm-as \
 	NM=llvm-nm \
 	LD=ld.lld \
 	STRIP=llvm-strip \
@@ -43,6 +45,8 @@ make	\
 	HOSTCC=clang \
 	HOSTCXX=clang++ \
 	HOSTAR=llvm-ar \
+	HOSTAS=llvm-as \
+	HOSTNM=llvm-nm \
 	HOSTLD=ld.lld \
 	CROSS_COMPILE=aarch64-linux-gnu- \
 	CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
