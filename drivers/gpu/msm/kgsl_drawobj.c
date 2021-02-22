@@ -55,7 +55,7 @@ static void free_fence_names(struct kgsl_drawobj_sync *syncobj)
 		struct kgsl_drawobj_sync_event *event = &syncobj->synclist[i];
 
 		if (event->type == KGSL_CMD_SYNCPOINT_TYPE_FENCE)
-			kfree(event->info.fences);
+			kfree(event->fence_name);
 	}
 }
 
