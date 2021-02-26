@@ -83,13 +83,7 @@ ifeq ($(CONFIG_COMPAT_VDSO), y)
     export CONFIG_VDSO32 := y
     vdso32 := -DCONFIG_VDSO32=1
   else ifeq ($(shell which $(CROSS_COMPILE_ARM32)$(cc-name) 2> /dev/null),)
-    ifeq ($(shell which $(CC_ARM32) 2> /dev/null),)
-      $(error $(CROSS_COMPILE_ARM32)$(cc-name) not found, check CROSS_COMPILE_ARM32)
-    else
-      export CROSS_COMPILE_ARM32
-      export CONFIG_VDSO32 := y
-      vdso32 := -DCONFIG_VDSO32=1
-    endif
+    $(error $(CROSS_COMPILE_ARM32)$(cc-name) not found, check CROSS_COMPILE_ARM32)
   else
     export CROSS_COMPILE_ARM32
     export CONFIG_VDSO32 := y
@@ -106,12 +100,6 @@ KBUILD_AFLAGS	+= $(lseinstr) $(vdso32)
 
 ifeq ($(CONFIG_SHADOW_CALL_STACK), y)
 KBUILD_CFLAGS	+= -ffixed-x18
-endif
-
-ifeq ($(cc-name),clang)
-KBUILD_CFLAGS	+= -DCONFIG_ARCH_SUPPORTS_INT128
-else
-KBUILD_CFLAGS	+= $(call cc-ifversion, -ge, 0500, -DCONFIG_ARCH_SUPPORTS_INT128)
 endif
 
 ifeq ($(CONFIG_CPU_BIG_ENDIAN), y)
@@ -262,4 +250,3 @@ define archhelp
   echo  '                  (distribution) /sbin/installkernel or'
   echo  '                  install to $$(INSTALL_PATH) and run lilo'
 endef
-
