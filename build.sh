@@ -4,6 +4,13 @@
 # Copyright (C) 2018 Rama Bondan Prakoso (rama982)
 # Android Kernel Build Script
 
+#Set Color
+blue='\033[0;34m'
+grn= '\033[0;32m'
+yellow='\033[0;33m'
+red='\033[0;31m'
+nocol='\033[0m'
+
 # Main environtment
 KERNEL_DIR=$PWD
 KERN_IMG=$KERNEL_DIR/out/arch/arm64/boot/Image.gz-dtb
@@ -27,7 +34,9 @@ _ksetup_old_path="$PATH"
 export PATH="$clang_bin:$PATH"
 
 # Build start
+echo -e "$yellow Make DefConfig $nocol"
 make	O=out $CONFIG
+echo -e "$yellow Build kernel $nocol"
 make	\
 	O=out \
 	ARCH=arm64 \
@@ -53,7 +62,7 @@ make	\
 	-j`nproc --all`
 
 if ! [ -a $KERN_IMG ]; then
-    echo "Build error!"
+    echo -e "$red Kernel Compilation failed! Fix the errors! $nocol"
 fi
 
 cd $ZIP_DIR
@@ -76,12 +85,12 @@ for MODULES in $(find "${OUTDIR}" -name '*.ko'); do
     find "${OUTDIR}" -name '*.ko' -exec cp {} "${VENDOR_MODULEDIR}" \;
 done
 cd libufdt/src && python2 mkdtboimg.py create $OUTDIR/arch/arm64/boot/dtbo.img $OUTDIR/arch/arm64/boot/dts/qcom/*.dtbo
-echo -e "\n(i) Done moving modules"
+echo -e "$grn \n(i) Done moving modules $nocol"
 
 cd $ZIP_DIR
 cp $KERN_IMG zImage
 cp $OUTDIR/arch/arm64/boot/dtbo.img $ZIP_DIR
 make normal &>/dev/null
-echo "Flashable zip generated under $ZIP_DIR."
+echo -e "$yellow Flashable zip generated under $ZIP_DIR. $nocol"
 cd ..
 # Build end
