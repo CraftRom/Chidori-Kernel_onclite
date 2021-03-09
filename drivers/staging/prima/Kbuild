@@ -31,12 +31,6 @@ CONFIG_WLAN_FEATURE_SAE := y
 # Flag to enable Legacy Fast Roaming(LFR) Make Before Break
 CONFIG_PRIMA_WLAN_LFR_MBB := y
 
-#Flag to enable SW PTA
-    CONFIG_WLAN_FEATURE_SW_PTA := y
-
-#Flag to enable OWE
-    CONFIG_WLAN_AKM_SUITE_OWE := y
-
 # JB kernel has PMKSA patches, hence enabling this flag
 CONFIG_PRIMA_WLAN_OKC := y
 
@@ -111,7 +105,7 @@ endif # ANDROID_BUILD_TOP
 else
 ifneq ($(ANDROID_BUILD_TOP),)
 ifeq ($(TARGET_PRODUCT),sdm429w)
-    WLAN_BLD_DIR := $(ANDROID_BUILD_TOP)/device/qcom/sdm429w/common/opensource/wlan
+    WLAN_BLD_DIR := $(ANDROID_BUILD_TOP)/$(BOARD_OPENSOURCE_DIR)/wlan
 else
     WLAN_BLD_DIR := $(ANDROID_BUILD_TOP)/vendor/qcom/opensource/wlan
 endif #TARGET_PRODUCT

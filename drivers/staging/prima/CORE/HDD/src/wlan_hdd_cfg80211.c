@@ -99,7 +99,7 @@
 #include "qwlan_version.h"
 #include "wlan_logging_sock_svc.h"
 #include "wlan_hdd_misc.h"
-
+#include <linux/wcnss_wlan.h>
 
 #define g_mode_rates_size (12)
 #define a_mode_rates_size (8)
@@ -623,7 +623,8 @@ static const struct nla_policy wlan_hdd_tm_policy[WLAN_HDD_TM_ATTR_MAX + 1] =
 #ifdef FEATURE_WLAN_SW_PTA
 bool hdd_is_sw_pta_enabled(hdd_context_t *hdd_ctx)
 {
-	return hdd_ctx->cfg_ini->is_sw_pta_enabled;
+	return hdd_ctx->cfg_ini->is_sw_pta_enabled ||
+		wcnss_is_sw_pta_enabled();
 }
 #endif
 
@@ -5632,7 +5633,8 @@ static int __wlan_hdd_cfg80211_set_spoofed_mac_oui(struct wiphy *wiphy,
             pHddCtx->spoofMacAddr.isEnabled = FALSE;
     }
 
-    schedule_delayed_work(&pHddCtx->spoof_mac_addr_work,
+    queue_delayed_work(system_freezable_power_efficient_wq,
+                          &pHddCtx->spoof_mac_addr_work,
                           msecs_to_jiffies(MAC_ADDR_SPOOFING_DEFER_INTERVAL));
 
     EXIT();
@@ -15321,7 +15323,8 @@ allow_suspend:
         /* Generate new random mac addr for next scan */
         hddLog(VOS_TRACE_LEVEL_INFO, "scan completed - generate new spoof mac addr");
 
-        schedule_delayed_work(&pHddCtx->spoof_mac_addr_work,
+        queue_delayed_work(system_freezable_power_efficient_wq,
+                           &pHddCtx->spoof_mac_addr_work,
                            msecs_to_jiffies(MAC_ADDR_SPOOFING_DEFER_INTERVAL));
     }
 
