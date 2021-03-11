@@ -6,7 +6,7 @@
 
 #Set Color
 blue='\033[0;34m'
-grn= '\033[0;32m'
+grn='\033[0;32m'
 yellow='\033[0;33m'
 red='\033[0;31m'
 nocol='\033[0m'
@@ -34,9 +34,9 @@ _ksetup_old_path="$PATH"
 export PATH="$clang_bin:$PATH"
 
 # Build start
-echo -e "$yellow Make DefConfig $nocol"
+echo -e "$blue    \nMake DefConfig\n $nocol"
 make	O=out $CONFIG
-echo -e "$yellow Build kernel $nocol"
+echo -e "$blue    \nBuild kernel\n $nocol"
 make	\
 	O=out \
 	ARCH=arm64 \
@@ -62,7 +62,7 @@ make	\
 	-j`nproc --all`
 
 if ! [ -a $KERN_IMG ]; then
-    echo -e "$red Kernel Compilation failed! Fix the errors! $nocol"
+    echo -e "$red \nKernel Compilation failed! Fix the errors!\n $nocol"
 fi
 
 cd $ZIP_DIR
@@ -85,12 +85,12 @@ for MODULES in $(find "${OUTDIR}" -name '*.ko'); do
     find "${OUTDIR}" -name '*.ko' -exec cp {} "${VENDOR_MODULEDIR}" \;
 done
 cd libufdt/src && python2 mkdtboimg.py create $OUTDIR/arch/arm64/boot/dtbo.img $OUTDIR/arch/arm64/boot/dts/qcom/*.dtbo
-echo -e "$grn \n(i) Done moving modules $nocol"
+echo -e "$grn    \n(i) Done moving modules\n $nocol"
 
 cd $ZIP_DIR
 cp $KERN_IMG zImage
 cp $OUTDIR/arch/arm64/boot/dtbo.img $ZIP_DIR
 make normal &>/dev/null
-echo -e "$yellow Flashable zip generated under $ZIP_DIR. $nocol"
+echo -e "$blue    \nFlashable zip generated under $yellow$ZIP_DIR.\n $nocol"
 cd ..
 # Build end
