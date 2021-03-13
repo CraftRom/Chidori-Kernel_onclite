@@ -1538,7 +1538,34 @@ static int queue_no_sg_merge(struct dm_target *ti, struct dm_dev *dev,
 {
 	struct request_queue *q = bdev_get_queue(dev->bdev);
 
-	return q && test_bit(QUEUE_FLAG_NO_SG_MERGE, &q->queue_flags);
+	return q && !test_bit(QUEUE_FLAG_NO_SG_MERGE, &q->queue_flags);
+}
+
+static int queue_supports_inline_encryption(struct dm_target *ti,
+					    struct dm_dev *dev,
+					    sector_t start, sector_t len,
+					    void *data)
+{
+	struct request_queue *q = bdev_get_queue(dev->bdev);
+
+	return q && blk_queue_inlinecrypt(q);
+}
+
+static bool dm_table_all_devices_attribute(struct dm_table *t,
+					   iterate_devices_callout_fn func)
+{
+	struct dm_target *ti;
+	unsigned i = 0;
+
+	while (i < dm_table_get_num_targets(t)) {
+		ti = dm_table_get_target(t, i++);
+
+		if (!ti->type->iterate_devices ||
+		    !ti->type->iterate_devices(ti, func, NULL))
+			return false;
+	}
+
+	return true;
 }
 
 static int device_not_write_same_capable(struct dm_target *ti, struct dm_dev *dev,
@@ -1832,4 +1859,3 @@ void dm_table_run_md_queue_async(struct dm_table *t)
 	}
 }
 EXPORT_SYMBOL(dm_table_run_md_queue_async);
-
