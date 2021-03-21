@@ -10,6 +10,16 @@ grn='\033[0;32m'
 yellow='\033[0;33m'
 red='\033[0;31m'
 nocol='\033[0m'
+txtbld=$(tput bold)
+txtrst=$(tput sgr0)  
+
+echo -e " "
+echo -e " "
+echo -e "$blue░▐█▀█░▐█░▐█░▐██░▐█▀█▄▒▐█▀▀█▌▒▐█▀▀▄░▐██"
+echo -e "░▐█──░▐████─░█▌░▐█▌▐█▒▐█▄▒█▌▒▐█▒▐█─░█▌"
+echo -e "░▐█▄█░▐█░▐█░▐██░▐█▄█▀▒▐██▄█▌▒▐█▀▄▄░▐██$nocol"
+echo -e " "
+  
 
 # Main environtment
 KERNEL_DIR=$PWD
@@ -21,6 +31,18 @@ CONFIG=onclite-perf_defconfig
 export ARCH=arm64
 export CROSS_COMPILE
 export CROSS_COMPILE_ARM32
+export KBUILD_BUILD_USER=melles1991
+export KBUILD_BUILD_HOST=CraftRom-build
+
+
+echo -e "${txtbld}Config:${txtrst} $CONFIG"
+echo -e "${txtbld}ARCH:${txtrst} $ARCH"
+echo -e "${txtbld}Username:${txtrst} $KBUILD_BUILD_USER"
+make mrproper
+if [  -d "./out/" ]; then
+echo -e " "
+        rm -rf ./out/
+fi
 
 # Main Staff
 
