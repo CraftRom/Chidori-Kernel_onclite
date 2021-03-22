@@ -255,6 +255,7 @@ static void zswap_entry_cache_free(struct zswap_entry *entry)
 * btree functions
 **********************************/
 static struct btree_geo *btree_pgofft_geo;
+
 static struct zswap_entry *zswap_search(struct btree_head *head, pgoff_t offset)
 {
 	return btree_lookup(head, btree_pgofft_geo, &offset);
@@ -314,7 +315,6 @@ static int zswap_insert_or_replace(struct btree_head *head,
 	return btree_insert(head, btree_pgofft_geo, &entry->offset, entry,
 			GFP_ATOMIC);
 }
-
 /* caller must hold the tree lock */
 static struct zswap_entry *zswap_entry_find_get(struct btree_head *head,
 				pgoff_t offset)
@@ -863,7 +863,7 @@ static int zswap_writeback_entry(struct zpool *pool, unsigned long handle)
 
 	/* find and ref zswap entry */
 	spin_lock(&tree->lock);
-	entry = zswap_entry_find_get(&tree->rbroot, offset);
+	entry = zswap_entry_find_get(&tree->head, offset);
 	if (!entry) {
 		/* entry was invalidated */
 		spin_unlock(&tree->lock);
@@ -913,7 +913,7 @@ static int zswap_writeback_entry(struct zpool *pool, unsigned long handle)
 
 	spin_lock(&tree->lock);
 	/* drop local reference */
-	zswap_entry_put(tree, entry);
+	zswap_entry_put(&tree->head, entry);
 
 	/*
 	* There are two possible situations for entry here:
@@ -922,8 +922,8 @@ static int zswap_writeback_entry(struct zpool *pool, unsigned long handle)
 	*     because invalidate happened during writeback
 	*  search the tree and free the entry if find entry
 	*/
-	if (entry == zswap_rb_search(&tree->rbroot, offset))
-		zswap_entry_put(tree, entry);
+	if (entry == zswap_search(&tree->head, offset))
+		zswap_entry_put(&tree->head, entry);
 	spin_unlock(&tree->lock);
 
 	goto end;
@@ -937,7 +937,7 @@ static int zswap_writeback_entry(struct zpool *pool, unsigned long handle)
 	*/
 fail:
 	spin_lock(&tree->lock);
-	zswap_entry_put(tree, entry);
+	zswap_entry_put(&tree->head, entry);
 	spin_unlock(&tree->lock);
 
 end:
@@ -1177,9 +1177,8 @@ static void zswap_frontswap_init(unsigned type)
 		pr_err("alloc failed, zswap disabled for swap type %d\n", type);
 		return;
 	}
-
 	if (btree_init(&tree->head) < 0) {
-	pr_err("couldn't init the tree head\n");
+		pr_err("couldn't init the tree head\n");
 		kfree(tree);
 		return;
 	}
