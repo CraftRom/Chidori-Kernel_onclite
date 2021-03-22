@@ -47,6 +47,8 @@ echo -e " "
         rm -rf ./out/
 fi
 echo -e "$grn \nFull cleaning was successful succesfully!\n $nocol"
+sleep 3
+exit 1
 fi
 
 if [[ $1 == "-r" || $1 == "--regen" ]]; then
@@ -56,6 +58,8 @@ git commit -am "defconfig: onclite: Regenerate" --signoff
 echo -e "$grn \nRegened defconfig succesfully!\n $nocol"
 make mrproper
 echo -e "$grn \nCleaning was successful succesfully!\n $nocol"
+sleep 3
+exit 1
 fi
 
 # Main Staff
