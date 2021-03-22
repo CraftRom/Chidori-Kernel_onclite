@@ -38,14 +38,27 @@ export KBUILD_BUILD_HOST=CraftRom-build
 echo -e "${txtbld}Config:${txtrst} $CONFIG"
 echo -e "${txtbld}ARCH:${txtrst} $ARCH"
 echo -e "${txtbld}Username:${txtrst} $KBUILD_BUILD_USER"
+echo -e " "
+
+if [[ $1 == "-c" || $1 == "--clean" ]]; then
 make mrproper
 if [  -d "./out/" ]; then
 echo -e " "
         rm -rf ./out/
 fi
+echo -e "$grn \nFull cleaning was successful succesfully!\n $nocol"
+fi
+
+if [[ $1 == "-r" || $1 == "--regen" ]]; then
+make $CONFIG
+cp .config arch/arm64/configs/$CONFIG
+git commit -am "defconfig: onclite: Regenerate" --signoff
+echo -e "$grn \nRegened defconfig succesfully!\n $nocol"
+make mrproper
+echo -e "$grn \nCleaning was successful succesfully!\n $nocol"
+fi
 
 # Main Staff
-
 clang_bin="$HOME/toolchains/proton-clang/bin"
 gcc_prefix64="aarch64-linux-gnu-"
 gcc_prefix32="arm-linux-gnueabi-"
