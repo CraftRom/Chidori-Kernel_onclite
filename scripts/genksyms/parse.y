@@ -76,6 +76,7 @@ static void record_compound(struct string_list **keyw,
 %token ATTRIBUTE_KEYW
 %token AUTO_KEYW
 %token BOOL_KEYW
+%token BUILTIN_INT_KEYW
 %token CHAR_KEYW
 %token CONST_KEYW
 %token DOUBLE_KEYW
@@ -91,6 +92,7 @@ static void record_compound(struct string_list **keyw,
 %token SHORT_KEYW
 %token SIGNED_KEYW
 %token STATIC_KEYW
+%token STATIC_ASSERT_KEYW
 %token STRUCT_KEYW
 %token TYPEDEF_KEYW
 %token UNION_KEYW
@@ -108,6 +110,7 @@ static void record_compound(struct string_list **keyw,
 %token BRACE_PHRASE
 %token BRACKET_PHRASE
 %token EXPRESSION_PHRASE
+%token STATIC_ASSERT_PHRASE
 
 %token CHAR
 %token DOTS
@@ -141,6 +144,7 @@ declaration1:
 	| function_definition
 	| asm_definition
 	| export_definition
+	| static_assert
 	| error ';'				{ $$ = $2; }
 	| error '}'				{ $$ = $2; }
 	;
@@ -263,6 +267,7 @@ simple_type_specifier:
 	| VOID_KEYW
 	| BOOL_KEYW
 	| VA_LIST_KEYW
+	| BUILTIN_INT_KEYW
 	| TYPE			{ (*$1)->tag = SYM_TYPEDEF; $$ = $1; }
 	;
 
@@ -503,6 +508,10 @@ export_definition:
 		{ export_symbol((*$3)->string); $$ = $5; }
 	;
 
+/* Ignore any module scoped _Static_assert(...) */
+static_assert:
+	STATIC_ASSERT_PHRASE ';'			{ $$ = $2; }
+	;
 
 %%
 
