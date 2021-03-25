@@ -1,8 +1,7 @@
-#!/usr/bin/env bash
-# SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2018 Raphiel Rollerscaperers (raphielscape)
-# Copyright (C) 2018 Rama Bondan Prakoso (rama982)
-# Android Kernel Build Script
+#!/bin/bash
+#
+# Compile script for Cartel kernel
+# Copyright (C) 2021 Craft Rom (melles1991).
 
 #Set Color
 blue='\033[0;34m'
@@ -41,14 +40,12 @@ echo -e "${txtbld}Username:${txtrst} $KBUILD_BUILD_USER"
 echo -e " "
 
 if [[ $1 == "-c" || $1 == "--clean" ]]; then
-make mrproper
 if [  -d "./out/" ]; then
 echo -e " "
         rm -rf ./out/
 fi
 echo -e "$grn \nFull cleaning was successful succesfully!\n $nocol"
-sleep 3
-exit 1
+sleep 2
 fi
 
 if [[ $1 == "-r" || $1 == "--regen" ]]; then
@@ -58,7 +55,7 @@ git commit -am "defconfig: onclite: Regenerate" --signoff
 echo -e "$grn \nRegened defconfig succesfully!\n $nocol"
 make mrproper
 echo -e "$grn \nCleaning was successful succesfully!\n $nocol"
-sleep 3
+sleep 4
 exit 1
 fi
 
@@ -75,30 +72,8 @@ export PATH="$clang_bin:$PATH"
 # Build start
 echo -e "$blue    \nMake DefConfig\n $nocol"
 make	O=out $CONFIG
-echo -e "$blue    \nBuild kernel\n $nocol"
-make	\
-	O=out \
-	ARCH=arm64 \
-	CC=clang \
-	CXX=clang++ \
-	AR=llvm-ar \
-	AS=llvm-as \
-	NM=llvm-nm \
-	LD=ld.lld \
-	STRIP=llvm-strip \
-	OBJCOPY=llvm-objcopy \
-	OBJDUMP=llvm-objdump \
-	OBJSIZE=llvm-size \
-	READELF=llvm-readelf \
-	HOSTCC=clang \
-	HOSTCXX=clang++ \
-	HOSTAR=llvm-ar \
-	HOSTAS=llvm-as \
-	HOSTNM=llvm-nm \
-	HOSTLD=ld.lld \
-	CROSS_COMPILE=aarch64-linux-gnu- \
-	CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-	-j`nproc --all`
+echo -e "$blue    \nStarting kernel compilation...\n $nocol"
+make	-j`nproc --all` O=out ARCH=arm64 CC="clang" LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- Image.gz-dtb dtbo.img
 
 if ! [ -a $KERN_IMG ]; then
     echo -e "$red \nKernel Compilation failed! Fix the errors!\n $nocol"
