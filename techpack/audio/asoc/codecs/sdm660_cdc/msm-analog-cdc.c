@@ -1,5 +1,4 @@
 /* Copyright (c) 2015-2020, The Linux Foundation. All rights reserved.
- * Copyright (C) 2020 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -47,6 +46,7 @@
 #define CODEC_DT_MAX_PROP_SIZE			40
 #define MAX_ON_DEMAND_SUPPLY_NAME_LENGTH	64
 #define BUS_DOWN 1
+#define K8_MODE_NUM 2
 
 /*
  * 200 Milliseconds sufficient for DSP bring up in the lpass
@@ -61,15 +61,15 @@
 
 #define MICBIAS_DEFAULT_VAL 2700000
 #define MICBIAS_MIN_VAL 1600000
-#define MICBIAS_STEP_SIZE 15000
+#define MICBIAS_STEP_SIZE 50000
 
-#define DEFAULT_BOOST_VOLTAGE 5400
-#define MIN_BOOST_VOLTAGE 4700
+#define DEFAULT_BOOST_VOLTAGE 5000
+#define MIN_BOOST_VOLTAGE 4000
 #define MAX_BOOST_VOLTAGE 5550
-#define BOOST_VOLTAGE_STEP 15
+#define BOOST_VOLTAGE_STEP 50
 
-#define SDM660_CDC_MBHC_BTN_COARSE_ADJ  50 /* in mV */
-#define SDM660_CDC_MBHC_BTN_FINE_ADJ 10 /* in mV */
+#define SDM660_CDC_MBHC_BTN_COARSE_ADJ  100 /* in mV */
+#define SDM660_CDC_MBHC_BTN_FINE_ADJ 12 /* in mV */
 
 #define VOLTAGE_CONVERTER(value, min_value, step_size)\
 	((value - min_value)/step_size)
@@ -1683,7 +1683,7 @@ static int msm_anlg_cdc_hph_mode_get(struct snd_kcontrol *kcontrol,
 					snd_soc_codec_get_drvdata(codec);
 
 	if (sdm660_cdc->hph_mode == NORMAL_MODE) {
-		ucontrol->value.integer.value[0] = 1;
+		ucontrol->value.integer.value[0] = 0;
 	} else if (sdm660_cdc->hph_mode == HD2_MODE) {
 		ucontrol->value.integer.value[0] = 1;
 	} else  {
@@ -1708,14 +1708,14 @@ static int msm_anlg_cdc_hph_mode_set(struct snd_kcontrol *kcontrol,
 
 	switch (ucontrol->value.integer.value[0]) {
 	case 0:
-		sdm660_cdc->hph_mode = HD2_MODE;
+		sdm660_cdc->hph_mode = NORMAL_MODE;
 		break;
 	case 1:
 		if (get_codec_version(sdm660_cdc) >= DIANGU)
 			sdm660_cdc->hph_mode = HD2_MODE;
 		break;
 	default:
-		sdm660_cdc->hph_mode = HD2_MODE;
+		sdm660_cdc->hph_mode = NORMAL_MODE;
 		break;
 	}
 	dev_dbg(codec->dev, "%s: sdm660_cdc->hph_mode_set = %d\n",
@@ -2853,6 +2853,7 @@ static int msm_anlg_cdc_lo_dac_event(struct snd_soc_dapm_widget *w,
 			MSM89XX_PMIC_ANALOG_RX_LO_DAC_CTL, 0x08, 0x08);
 		snd_soc_update_bits(codec,
 			MSM89XX_PMIC_ANALOG_RX_LO_DAC_CTL, 0x40, 0x40);
+		msleep(5);
 		break;
 	case SND_SOC_DAPM_POST_PMU:
 		snd_soc_update_bits(codec,
@@ -3240,6 +3241,7 @@ static struct snd_soc_dai_driver msm_anlg_cdc_i2s_dai[] = {
 };
 
 extern unsigned char aw87329_hw_off(void);
+
 static int msm_anlg_cdc_codec_enable_lo_pa(struct snd_soc_dapm_widget *w,
 					   struct snd_kcontrol *kcontrol,
 					   int event)
@@ -3770,7 +3772,7 @@ static int msm_anlg_cdc_device_down(struct snd_soc_codec *codec)
 		}
 	}
 	msm_anlg_cdc_boost_off(codec);
-	sdm660_cdc_priv->hph_mode = HD2_MODE;
+	sdm660_cdc_priv->hph_mode = NORMAL_MODE;
 	/* Disable PA to avoid pop during codec bring up */
 	snd_soc_update_bits(codec, MSM89XX_PMIC_ANALOG_RX_HPH_CNP_EN,
 			0x30, 0x00);
@@ -4138,7 +4140,7 @@ static int msm_anlg_cdc_soc_probe(struct snd_soc_codec *codec)
 	 * it to BOOST_ALWAYS or BOOST_BYPASS based on solution chosen.
 	 */
 	sdm660_cdc->boost_option = BOOST_SWITCH;
-	sdm660_cdc->hph_mode = HD2_MODE;
+	sdm660_cdc->hph_mode = NORMAL_MODE;
 
 	msm_anlg_cdc_dt_parse_boost_info(codec);
 	msm_anlg_cdc_set_boost_v(codec);
@@ -4590,7 +4592,7 @@ static int msm_anlg_cdc_probe(struct platform_device *pdev)
 	adsp_state = apr_get_subsys_state();
 	if (adsp_state == APR_SUBSYS_DOWN ||
 		!q6core_is_adsp_ready()) {
-		dev_err(&pdev->dev, "Adsp is not loaded yet %d\n",
+		dev_dbg(&pdev->dev, "Adsp is not loaded yet %d\n",
 			adsp_state);
 		return -EPROBE_DEFER;
 	}

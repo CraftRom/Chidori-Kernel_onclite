@@ -43,8 +43,8 @@ enum codec_versions {
 
 /* Support different hph modes */
 enum {
-	HD2_MODE = 0,
-	NORMAL_MODE,
+	NORMAL_MODE = 0,
+	HD2_MODE,
 };
 
 enum dig_cdc_notify_event {
