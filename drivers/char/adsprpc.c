@@ -735,6 +735,12 @@ static void fastrpc_mmap_free(struct fastrpc_mmap *map, uint32_t flags)
 	if (!map)
 		return;
 	fl = map->fl;
+	/* remote heap and dynamic loading memory
+	 * maps expected to initialize with NULL
+	 */
+	if (!fl && !(map->flags == ADSP_MMAP_HEAP_ADDR ||
+				map->flags == ADSP_MMAP_REMOTE_HEAP_ADDR))
+		return;
 	if (fl && !(map->flags == ADSP_MMAP_HEAP_ADDR ||
 				map->flags == ADSP_MMAP_REMOTE_HEAP_ADDR)) {
 		cid = fl->cid;
