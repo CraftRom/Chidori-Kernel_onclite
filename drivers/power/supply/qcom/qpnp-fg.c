@@ -4028,13 +4028,27 @@ static void status_change_work(struct work_struct *work)
 
 	if (chip->status == POWER_SUPPLY_STATUS_FULL) {
 		if (capacity >= 99 && chip->hold_soc_while_full
-				&& chip->health == POWER_SUPPLY_HEALTH_GOOD) {
-			if (fg_debug_mask & FG_STATUS)
+				&& (chip->health == POWER_SUPPLY_HEALTH_GOOD
+				|| chip->health == POWER_SUPPLY_HEALTH_COOL
+				|| chip->health == POWER_SUPPLY_HEALTH_WARM)) {
+			if (fg_debug_mask & FG_STATUS) {
 				pr_info("holding soc at 100\n");
+			} else {
+				pr_info("holding soc at 100\n");
+			}
 			chip->charge_full = true;
+			if (chip->charge_full) {
+				pr_info("charge_full success!\n");
+				pr_info("capacity is :%d\n", capacity);
+			} else {
+				pr_info("charge_full failed!\n");
+				pr_info("battery capacity is :%d\n", capacity);
+			}
 		} else if (fg_debug_mask & FG_STATUS) {
 			pr_info("terminated charging at %d/0x%02x\n",
 					capacity, get_monotonic_soc_raw(chip));
+		} else {
+			pr_info("terminated charging, due capacity: %d\n", capacity);
 		}
 	}
 	if (chip->status == POWER_SUPPLY_STATUS_FULL ||
