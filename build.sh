@@ -3,6 +3,8 @@
 # Compile script for Cartel kernel
 # Copyright (C) 2021 Craft Rom (melles1991).
 
+SECONDS=0 # builtin bash timer
+
 #Set Color
 blue='\033[0;34m'
 grn='\033[0;32m'
@@ -19,7 +21,6 @@ echo -e "░▐█──░▐████─░█▌░▐█▌▐█▒▐�
 echo -e "░▐█▄█░▐█░▐█░▐██░▐█▄█▀▒▐██▄█▌▒▐█▀▄▄░▐██$nocol"
 echo -e " "
   
-
 # Main environtment
 KERNEL_DIR=$PWD
 KERN_IMG=$KERNEL_DIR/out/arch/arm64/boot/Image.gz-dtb
@@ -99,12 +100,13 @@ for MODULES in $(find "${OUTDIR}" -name '*.ko'); do
     find "${OUTDIR}" -name '*.ko' -exec cp {} "${VENDOR_MODULEDIR}" \;
 done
 cd libufdt/src && python2 mkdtboimg.py create $OUTDIR/arch/arm64/boot/dtbo.img $OUTDIR/arch/arm64/boot/dts/qcom/*.dtbo
-echo -e "$grn    \n(i) Done moving modules\n $nocol"
+echo -e "$grn    \n(i)          Done moving modules\n $nocol"
 
 cd $ZIP_DIR
 cp $KERN_IMG zImage
 cp $OUTDIR/arch/arm64/boot/dtbo.img $ZIP_DIR
 make normal &>/dev/null
+echo -e "$grn \n(i)          Completed build$nocol $red$((SECONDS / 60))$nocol $grn minute(s) and $nocol $red $((SECONDS % 60))$nocol second(s) !$nocol"
 echo -e "$blue    \nFlashable zip generated under $yellow$ZIP_DIR.\n $nocol"
 cd ..
 # Build end
