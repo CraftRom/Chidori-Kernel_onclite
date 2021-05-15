@@ -1,7 +1,5 @@
 comment "Qualcomm Atheros Prima WLAN module"
 
-if CFG80211 && WCNSS_CORE_PRONTO
-
 config PRIMA_WLAN
 	tristate "Qualcomm Atheros Prima WLAN module"
 	default n
@@ -13,5 +11,3 @@ config PRONTO_WLAN
 	default n
 	help
 	  Add support for the Qualcomm Atheros Pronto WLAN module
-
-endif # CFG80211 && WCNSS_CORE_PRONTO

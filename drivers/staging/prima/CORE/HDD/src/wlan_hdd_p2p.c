@@ -164,6 +164,22 @@ static v_BOOL_t wlan_hdd_is_type_p2p_action( const u8 *buf, uint32_t len )
     return VOS_TRUE;
 }
 
+static bool hdd_p2p_is_action_type_rsp( const u8 *buf, uint32_t len )
+{
+    tActionFrmType actionFrmType;
+
+    if ( wlan_hdd_is_type_p2p_action(buf, len) )
+    {
+        actionFrmType = buf[WLAN_HDD_PUBLIC_ACTION_FRAME_SUB_TYPE_OFFSET];
+        if ( actionFrmType != WLAN_HDD_INVITATION_REQ &&
+            actionFrmType != WLAN_HDD_GO_NEG_REQ &&
+            actionFrmType != WLAN_HDD_DEV_DIS_REQ &&
+            actionFrmType != WLAN_HDD_PROV_DIS_REQ )
+            return VOS_TRUE;
+    }
+    return VOS_FALSE;
+}
+
 eHalStatus wlan_hdd_remain_on_channel_callback( tHalHandle hHal, void* pCtx,
                                                 eHalStatus status )
 {
@@ -834,8 +850,7 @@ static int wlan_hdd_request_remain_on_channel( struct wiphy *wiphy,
 
                 mutex_unlock(&pHddCtx->roc_lock);
 
-                queue_delayed_work(system_freezable_power_efficient_wq,
-                        &pAdapter->roc_work,
+                schedule_delayed_work(&pAdapter->roc_work,
                         msecs_to_jiffies(pHddCtx->cfg_ini->gP2PListenDeferInterval));
                 hddLog(VOS_TRACE_LEVEL_INFO, "Defer interval is %hu, pAdapter %pK",
                         pHddCtx->cfg_ini->gP2PListenDeferInterval, pAdapter);
@@ -1453,7 +1468,9 @@ int __wlan_hdd_mgmt_tx( struct wiphy *wiphy, struct net_device *dev,
 
     //If GO adapter exists and operating on same frequency
     //then we will not request remain on channel
-    if (chan && ieee80211_frequency_to_channel(chan->center_freq) == home_ch)
+    if (chan &&
+        (ieee80211_frequency_to_channel(chan->center_freq) ==
+        home_ch))
     {
         /*  if GO exist and is not off channel
          *  wait time should be zero.
