@@ -14814,7 +14814,7 @@ int hdd_wlan_startup(struct device *dev )
 
    mutex_init(&pHddCtx->cache_channel_lock);
 
-   wcnss_update_bt_profile();
+   hdd_init_sw_pta(pHddCtx);
    goto success;
 
 err_open_cesium_nl_sock:
