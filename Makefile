@@ -811,6 +811,8 @@ KBUILD_CFLAGS += -Wno-unknown-warning-option
 
 KBUILD_CFLAGS += -Wno-unknown-warning-option
 
+KBUILD_CFLAGS += -Wno-unknown-warning-option
+
 ifdef CONFIG_LD_DEAD_CODE_DATA_ELIMINATION
 KBUILD_CFLAGS	+= $(call cc-option,-ffunction-sections,)
 KBUILD_CFLAGS	+= $(call cc-option,-fdata-sections,)
