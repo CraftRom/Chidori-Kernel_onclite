@@ -304,6 +304,38 @@ static int help(struct sk_buff *skb, unsigned int protoff,
 			goto out;
 		}
 
+	/* Skip any whitespace */
+	while (data < data_limit - 10) {
+		if (*data == ' ' || *data == '\r' || *data == '\n')
+			data++;
+		else
+			break;
+	}
+
+	/* strlen("PRIVMSG x ")=10 */
+	if (data < data_limit - 10) {
+		if (strncasecmp("PRIVMSG ", data, 8))
+			goto out;
+		data += 8;
+	}
+
+	/* strlen(" :\1DCC SENT t AAAAAAAA P\1\n")=26
+	 * 7+MINMATCHLEN+strlen("t AAAAAAAA P\1\n")=26
+	 */
+	while (data < data_limit - (21 + MINMATCHLEN)) {
+		/* Find first " :", the start of message */
+		if (memcmp(data, " :", 2)) {
+			data++;
+			continue;
+		}
+		data += 2;
+
+		/* then check that place only for the DCC command */
+		if (memcmp(data, "\1DCC ", 5))
+			goto out;
+		data += 5;
+		/* we have at least (21+MINMATCHLEN)-(2+5) bytes valid data left */
+
 		/* strlen("NICK :xxxxxx")
 		 * 6+strlen("xxxxxx")=1 (minimum length of nickname)
 		 * Parsing the server reply to get nickname
@@ -316,6 +348,7 @@ static int help(struct sk_buff *skb, unsigned int protoff,
 				data++;
 				continue;
 			}
+<<<<<<< HEAD
 			data += 6;
 			nick_end = data;
 			i = 0;
@@ -323,6 +356,18 @@ static int help(struct sk_buff *skb, unsigned int protoff,
 			       (*(nick_end + 1) != '\n')) {
 				nick_end++;
 				i++;
+=======
+			data += strlen(dccprotos[i]);
+			pr_debug("DCC %s detected\n", dccprotos[i]);
+
+			/* we have at least
+			 * (21+MINMATCHLEN)-7-dccprotos[i].matchlen bytes valid
+			 * data left (== 14/13 bytes) */
+			if (parse_dcc(data, data_limit, &dcc_ip,
+				       &dcc_port, &addr_beg_p, &addr_end_p)) {
+				pr_debug("unable to parse dcc command\n");
+				continue;
+>>>>>>> 9255253b7740... netfilter: nf_conntrack_irc: Tighten matching on DCC message
 			}
 			tuple = &ct->tuplehash[!dir].tuple;
 			temp = search_client_by_ip(tuple);
