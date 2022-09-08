@@ -1295,6 +1295,10 @@ static ssize_t __maybe_unused random_read_iter(struct kiocb *kiocb, struct iov_i
 {
 	int ret;
 
+	if (!crng_ready() &&
+	    (kiocb->ki_filp->f_flags & O_NONBLOCK))
+		return -EAGAIN;
+
 	ret = wait_for_random_bytes();
 	if (ret != 0)
 		return ret;
