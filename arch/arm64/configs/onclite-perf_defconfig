@@ -1301,6 +1301,7 @@ CONFIG_UID_SYS_STATS=y
 # CONFIG_QPNP_MISC is not set
 CONFIG_ANT_CHECK=y
 CONFIG_SIMTRAY_STATUS=y
+CONFIG_BATTERY_SAVER=y
 # CONFIG_C2PORT is not set
 
 #
@@ -1364,6 +1365,7 @@ CONFIG_SIMTRAY_STATUS=y
 # FingerprintCard fingerprint driver
 #
 # CONFIG_FPR_FPC is not set
+# CONFIG_HQ_SYSFS_SUPPORT is not set
 
 #
 # SCSI device support
