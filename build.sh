@@ -216,6 +216,7 @@ if [ -f "$kernel" ] && [ -f "$dtbo" ]; then
 		
 		<b>Maintainer:</b> <code>$KBUILD_BUILD_USER</code>
 		<b>Builder:</b> $BUILDER
+		<b>Linux:</b> <code>$KERN_VER</code>
 		<b>Type:</b> <code>$TYPE</code>
 		<b>BuildDate:</b> <code>$BUILD_DATE</code>
 		<b>Filename:</b> <code>$ZIPNAME</code>
