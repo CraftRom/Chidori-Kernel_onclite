@@ -508,6 +508,12 @@ typedef enum
   /* BLACKLIST Request */
   WDI_BLACKLIST_REQ                              = 127,
   WDI_SET_LOW_POWER_REQ                          = 128,
+
+#ifdef FEATURE_WLAN_SW_PTA
+  /* SW PTA coex params request */
+  WDI_SW_PTA_COEX_PARAMS_REQ                     = 129,
+#endif
+
   WDI_MAX_REQ,
 
   /*Send a suspend Indication down to HAL*/
@@ -901,6 +907,10 @@ typedef enum
   WDI_BLACKLIST_RSP                              = 126,
   WDI_SET_LOW_POWER_RSP                          = 127,
 
+#ifdef FEATURE_WLAN_SW_PTA
+  /* SW PTA coex params response */
+  WDI_SW_PTA_COEX_PARAMS_RSP                    = 128,
+#endif
   /*-------------------------------------------------------------------------
     Indications
      !! Keep these last in the enum if possible
@@ -2551,6 +2561,7 @@ WDI_Status WDI_ProcessSetTxPowerReq
   WDI_EventInfoType*     pEventData
 );
 
+#ifdef WLAN_FEATURE_P2P
 /**
  @brief Process P2P Notice Of Absence Request function (called when Main FSM
         allows it)
@@ -2567,6 +2578,7 @@ WDI_ProcessP2PGONOAReq
   WDI_ControlBlockType*  pWDICtx,
   WDI_EventInfoType*     pEventData
 );
+#endif
 
 /**
  @brief Process TDLS Link Establish Request function (called when Main FSM
@@ -4785,6 +4797,7 @@ WDI_ProcessTXFailInd
 );
 #endif /* WLAN_FEATURE_RMC */
 
+#ifdef WLAN_FEATURE_P2P
 /**
 *@brief Process Noa Start Indication function (called when
         an indication of this kind is being received over the
@@ -4820,6 +4833,7 @@ WDI_ProcessP2pNoaAttrInd
   WDI_ControlBlockType*  pWDICtx,
   WDI_EventInfoType*     pEventData
 );
+#endif
 
 /**
 *@brief Process Tx Per Hit Indication function (called when
@@ -6930,6 +6944,32 @@ WDI_ProcessGetArpStatsResp
   WDI_ControlBlockType*  pWDICtx,
   WDI_EventInfoType*     pEventData
 );
+
+#ifdef FEATURE_WLAN_SW_PTA
+/**
+ * WDI_process_sw_pta_req() - process sw pta coex params request
+ *
+ * @pWDICtx: pointer to the WLAN DAL context
+ * @pEventData: pointer to the event information structure
+ *
+ * @return Result of the function call
+ */
+WDI_Status
+WDI_process_sw_pta_req(WDI_ControlBlockType *pWDICtx,
+		       WDI_EventInfoType *pEventData);
+
+/**
+ * WDI_process_sw_pta_resp() - process sw pta coex params response
+ *
+ * @pWDICtx: pointer to the WLAN DAL context
+ * @pEventData: pointer to the event information structure
+ *
+ * @return Result of the function call
+ */
+WDI_Status
+WDI_process_sw_pta_resp(WDI_ControlBlockType *pWDICtx,
+			WDI_EventInfoType *pEventData);
+#endif /* FEATURE_WLAN_SW_PTA */
 
 #endif /*WLAN_QCT_WDI_I_H*/
 

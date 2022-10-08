@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2011-2019 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -4218,31 +4219,6 @@ void csrApplyChannelPowerCountryInfo( tpAniSirGlobal pMac, tCsrChannel *pChannel
     csrSetCfgCountryCode(pMac, countryCode);
 }
 
-void csrUpdateFCCChannelList(tpAniSirGlobal pMac)
-{
-    tCsrChannel ChannelList;
-    tANI_U8 chnlIndx = 0;
-    int i;
-
-    for ( i = 0; i < pMac->scan.base20MHzChannels.numChannels; i++ )
-    {
-        if (pMac->scan.fcc_constraint &&
-            ((pMac->scan.base20MHzChannels.channelList[i] == 12) ||
-            (pMac->scan.base20MHzChannels.channelList[i] == 13)))
-        {
-                    VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_INFO,
-                        FL("removing channel %d"),
-                        pMac->scan.base20MHzChannels.channelList[i]);
-            continue;
-        }
-        ChannelList.channelList[chnlIndx] =
-        pMac->scan.base20MHzChannels.channelList[i];
-        chnlIndx++;
-    }
-    csrSetCfgValidChannelList(pMac, ChannelList.channelList, chnlIndx);
-    csrScanFilterResults(pMac);
-}
-
 void csrResetCountryInformation( tpAniSirGlobal pMac, tANI_BOOLEAN fForce, tANI_BOOLEAN updateRiva )
 {
     if( fForce || (csrIs11dSupported( pMac ) && (!pMac->scan.f11dInfoReset)))
@@ -5875,7 +5851,7 @@ static tANI_BOOLEAN csrScanProcessScanResults( tpAniSirGlobal pMac, tSmeCmd *pCo
         if (eHAL_STATUS_SUCCESS != status)
             smsLog(pMac, LOGE,
                    FL( "failed to update the supported channel list"));
-            pMac->scan.defer_update_channel_list = false;
+        pMac->scan.defer_update_channel_list = false;
     }
 
 #ifdef WLAN_AP_STA_CONCURRENCY
@@ -7923,7 +7899,7 @@ tANI_BOOLEAN csrScanRemoveFreshScanCommand(tpAniSirGlobal pMac, tANI_U8 sessionI
 
 void csrReleaseScanCommand(tpAniSirGlobal pMac, tSmeCmd *pCommand, eCsrScanStatus scanStatus)
 {
-    eCsrScanReason reason = pCommand->u.scanCmd.reason;
+    eCsrScanReason __maybe_unused reason = pCommand->u.scanCmd.reason;
     tANI_BOOLEAN status;
 
     if (!pMac->fScanOffload)
@@ -9282,22 +9258,28 @@ eHalStatus csrScanSavePreferredNetworkFound(tpAniSirGlobal pMac,
    }
    else
    {
-      /**
-        * If Probe Responce received in PNO indication does not
-        * contain DSParam IE or HT Info IE then add dummy channel
-        * to the received BSS info so that Scan result received as
-        * a part of PNO is updated to the supplicant. Specially
-        * applicable in case of AP configured in 11A only mode.
-        */
-      if ((pMac->roam.configParam.bandCapability == eCSR_BAND_ALL) ||
-          (pMac->roam.configParam.bandCapability == eCSR_BAND_24))
-      {
-          pBssDescr->channelId = 1;
+      pBssDescr->channelId = vos_freq_to_chan(pPrefNetworkFoundInd->freq);
+
+      /* If probe response received in PNO indication does not
+       * contain DSParam IE or HT Info IE, and if the pref
+       * network indication also doesn't give proper channel,
+       * then add dummy channel to the received BSS info so
+       * that the Scan result received as a part of PNO is
+       * updated to the supplicant. Specially applicable
+       * in case of AP configured in 11a only mode.
+       */
+      if (!pBssDescr->channelId) {
+          if ((pMac->roam.configParam.bandCapability == eCSR_BAND_ALL) ||
+             (pMac->roam.configParam.bandCapability == eCSR_BAND_24))
+          {
+              pBssDescr->channelId = 1;
+          }
+          else if(pMac->roam.configParam.bandCapability == eCSR_BAND_5G)
+          {
+              pBssDescr->channelId = 36;
+          }
       }
-      else if(pMac->roam.configParam.bandCapability == eCSR_BAND_5G)
-      {
-         pBssDescr->channelId = 36;
-      }
+
       /* Restrict the logic to ignore the pno indication for invalid channel
        * only if valid channel info is present in beacon/probe resp.
        * If no channel info is present in beacon/probe resp, always process

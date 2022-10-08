@@ -594,7 +594,7 @@ int wlan_pkt_stats_to_user(void *perPktStat)
 	return 0;
 }
 
-void wlan_disable_and_flush_pkt_stats()
+void wlan_disable_and_flush_pkt_stats(void)
 {
 	unsigned long flags;
 	int ret = 0;
@@ -1512,8 +1512,8 @@ int wlan_logging_sock_activate_svc(int log_fe_to_console, int num_buf,
 	{
 		pr_info("%s: Initalizing Pkt stats pkt_stats_buff = %d\n",
 			__func__, pkt_stats_buff);
-		pkt_stats_buffers = (struct pkt_stats_msg *) kzalloc(
-			 pkt_stats_buff * sizeof(struct pkt_stats_msg), GFP_KERNEL);
+		pkt_stats_buffers = (struct pkt_stats_msg *) vos_mem_malloc(
+			 pkt_stats_buff * sizeof(struct pkt_stats_msg));
 		if (!pkt_stats_buffers) {
 			pr_err("%s: Could not allocate memory for Pkt stats\n", __func__);
 			failure = TRUE;
@@ -1936,7 +1936,7 @@ void wlan_process_done_indication(uint8 type, uint32 reason_code)
 
 	if ((type == WLAN_FW_LOGS) && reason_code &&
 				 vos_isFatalEventEnabled() &&
-				 vos_is_wlan_logging_enabled())
+				 vos_is_wlan_logging_enabled() && reason_code != 4105)
 	{
 		if(wlan_is_log_report_in_progress() == TRUE)
 		{
@@ -1962,7 +1962,8 @@ void wlan_process_done_indication(uint8 type, uint32 reason_code)
 				spin_unlock_irqrestore(
 					&gwlan_logging.bug_report_lock,
 					flags);
-				pr_info("%s: Ignoring Fatal event from firmware for reason %d\n",
+				pr_debug_ratelimited(
+					"%s: Ignoring Fatal event from firmware for reason %d\n",
 					__func__, reason_code);
 				return;
 			}
@@ -1994,7 +1995,7 @@ void wlan_process_done_indication(uint8 type, uint32 reason_code)
  * wlan_flush_host_logs_for_fatal() -flush host logs and send
  * fatal event to upper layer.
  */
-void wlan_flush_host_logs_for_fatal()
+void wlan_flush_host_logs_for_fatal(void)
 {
 	unsigned long flags;
 
@@ -2060,7 +2061,7 @@ void wlan_set_fwr_mem_dump_state(enum FW_MEM_DUMP_STATE fw_mem_dump_state)
 	spin_unlock_irqrestore(&gwlan_logging.fw_mem_dump_ctx.fw_mem_dump_lock, flags);
 }
 /*check for new request validity and free memory if present from previous request */
-bool wlan_fwr_mem_dump_test_and_set_write_allowed_bit(){
+bool wlan_fwr_mem_dump_test_and_set_write_allowed_bit(void){
 	unsigned long flags;
 	bool ret = false;
 	bool write_done = false;
@@ -2083,7 +2084,7 @@ bool wlan_fwr_mem_dump_test_and_set_write_allowed_bit(){
 	return ret;
 }
 
-bool wlan_fwr_mem_dump_test_and_set_read_allowed_bit(){
+bool wlan_fwr_mem_dump_test_and_set_read_allowed_bit(void){
 	unsigned long flags;
 	bool ret=false;
 	spin_lock_irqsave(&gwlan_logging.fw_mem_dump_ctx.fw_mem_dump_lock, flags);

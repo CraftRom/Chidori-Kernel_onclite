@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2019 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2020 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -903,6 +903,7 @@ typedef struct tagCsrRoamProfile
 
     tCsrAuthList AuthType;
     eCsrAuthType negotiatedAuthType;
+    tCsrAuthList akm_list;
 
     tCsrEncryptionList EncryptionType;
     //This field is for output only, not for input
@@ -974,6 +975,7 @@ typedef struct tagCsrRoamProfile
     bool force_24ghz_in_ht20;
     tCsrBssid bssid_hint;
     bool force_rsne_override;
+    bool require_h2e;
 }tCsrRoamProfile;
 
 
@@ -986,6 +988,7 @@ typedef struct tagCsrRoamConnectedProfile
     eCsrRoamBssType BSSType;
     eCsrAuthType AuthType;
     tCsrAuthList AuthInfo;
+    tCsrAuthList akm_list;
     eCsrEncryptionType EncryptionType;
     tCsrEncryptionList EncryptionInfo;
     eCsrEncryptionType mcEncryptionType;
@@ -1265,6 +1268,8 @@ typedef struct tagCsrConfigParam
     tANI_U8 num_ba_buff_btc_sco;
     tANI_U8 num_ba_buff;
     bool force_scc_with_ecsa;
+    bool isPeriodicRoamScanEnabled;
+    bool require_h2e;
 }tCsrConfigParam;
 
 //Tush
@@ -1401,6 +1406,8 @@ typedef struct sSirSmeAssocIndToUpperLayerCnf
     tSirMacHTChannelWidth ch_width;
     tDot11fIEHTCaps HTCaps;
     tDot11fIEVHTCaps VHTCaps;
+    uint32_t             ies_len;
+    uint8_t              *ies;
 } tSirSmeAssocIndToUpperLayerCnf, *tpSirSmeAssocIndToUpperLayerCnf;
 
 typedef struct tagCsrSummaryStatsInfo

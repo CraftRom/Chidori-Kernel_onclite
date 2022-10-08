@@ -878,7 +878,7 @@ __limProcessDelTsReq(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,tpPESession pse
     tsinfo = delts.wmeTspecPresent ? &delts.tspec.tsinfo : &delts.tsinfo;
 
     // if no Admit Control, ignore the request
-    if ((tsinfo->traffic.accessPolicy == SIR_MAC_ACCESSPOLICY_EDCA))
+    if (tsinfo->traffic.accessPolicy == SIR_MAC_ACCESSPOLICY_EDCA)
     {
     
         if (upToAc(tsinfo->traffic.userPrio) >= MAX_NUM_AC)
@@ -1005,7 +1005,8 @@ __limProcessQosMapConfigureFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,
      }
      limSendSmeMgmtFrameInd(pMac, psessionEntry->smeSessionId,
                                         pRxPacketInfo, psessionEntry,
-                                        WDA_GET_RX_RSSI_DB(pRxPacketInfo));
+                                        WDA_GET_RX_RSSI_DB(pRxPacketInfo),
+                                        RXMGMT_FLAG_NONE);
 }
 
 #ifdef ANI_SUPPORT_11H
@@ -1663,9 +1664,9 @@ tANI_U8 *pBody;
     else
         frmAddBARsp.AddBAParameterSet.bufferSize =
                     VOS_MIN(val, frmAddBARsp.AddBAParameterSet.bufferSize);
-        limLog( pMac, LOG1,
-            FL( "ADDBA RSP  Buffsize = %d" ),
-            frmAddBARsp.AddBAParameterSet.bufferSize);
+    limLog( pMac, LOG1,
+        FL( "ADDBA RSP  Buffsize = %d" ),
+        frmAddBARsp.AddBAParameterSet.bufferSize);
     // Now, validate the ADDBA Rsp
     if( eSIR_MAC_SUCCESS_STATUS !=
         __limValidateAddBAParameterSet( pMac, pSta,
@@ -2267,7 +2268,8 @@ static void __limProcessSAQueryResponseActionFrame(tpAniSirGlobal pMac, tANI_U8 
     {
         limSendSmeMgmtFrameInd(pMac, psessionEntry->smeSessionId,
                                     pRxPacketInfo, psessionEntry,
-                                    WDA_GET_RX_RSSI_DB(pRxPacketInfo));
+                                    WDA_GET_RX_RSSI_DB(pRxPacketInfo),
+                                    RXMGMT_FLAG_NONE);
         return;
     }
 
@@ -2567,7 +2569,7 @@ limProcessActionFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,tpPESession ps
                /* Forward to the SME to HDD to wpa_supplicant */
                limSendSmeMgmtFrameInd(pMac, psessionEntry->smeSessionId,
                                        pRxPacketInfo,
-                                       psessionEntry, rssi);
+                                       psessionEntry, rssi, RXMGMT_FLAG_NONE);
                break;
             }
         }
@@ -2611,7 +2613,6 @@ limProcessActionFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,tpPESession ps
         case SIR_MAC_ACTION_VENDOR_SPECIFIC_CATEGORY:
             {
               tpSirMacVendorSpecificFrameHdr pVendorSpecific = (tpSirMacVendorSpecificFrameHdr) pActionHdr;
-              tANI_U8 Oui[] = { 0x00, 0x00, 0xf0 };
 
 		if(frameLen < sizeof(*pVendorSpecific)) {
 			limLog(pMac, LOGE,
@@ -2619,24 +2620,19 @@ limProcessActionFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,tpPESession ps
 			break;
 		  }
 
-              //Check if it is a vendor specific action frame.
-              if ((eLIM_STA_ROLE == psessionEntry->limSystemRole) &&
-                  (VOS_TRUE == vos_mem_compare(psessionEntry->selfMacAddr,
-                    &pHdr->da[0], sizeof(tSirMacAddr))) &&
-                    IS_WES_MODE_ENABLED(pMac) &&
-                    vos_mem_compare(pVendorSpecific->Oui, Oui, 3))
-              {
-                  PELOGE( limLog( pMac, LOGW, FL("Received Vendor specific action frame, OUI %x %x %x"),
-                         pVendorSpecific->Oui[0], pVendorSpecific->Oui[1], pVendorSpecific->Oui[2]);)
+		if ((eLIM_STA_IN_IBSS_ROLE != psessionEntry->limSystemRole) &&
+		    (VOS_TRUE == vos_mem_compare(psessionEntry->selfMacAddr,
+		    &pHdr->da[0], sizeof(tSirMacAddr)))) {
+			limLog(pMac, LOGW, FL("Received Vendor specific action frame, OUI %x %x %x"),
+			       pVendorSpecific->Oui[0], pVendorSpecific->Oui[1], pVendorSpecific->Oui[2]);
                  /* Forward to the SME to HDD to wpa_supplicant */
                  // type is ACTION
                   limSendSmeMgmtFrameInd(pMac, psessionEntry->smeSessionId,
                                          pRxPacketInfo,
-                                         psessionEntry, 0);
+                                         psessionEntry, 0, RXMGMT_FLAG_NONE);
               }
 #if defined (WLAN_FEATURE_RMC)
-              else if ((eLIM_STA_IN_IBSS_ROLE == psessionEntry->limSystemRole) &&
-                  ((VOS_TRUE == vos_mem_compare(SIR_MAC_RMC_MCAST_ADDRESS,
+		else if (((VOS_TRUE == vos_mem_compare(SIR_MAC_RMC_MCAST_ADDRESS,
                     &pHdr->da[0], sizeof(tSirMacAddr))) ||
                    (VOS_TRUE == vos_mem_compare(psessionEntry->selfMacAddr,
                      &pHdr->da[0], sizeof(tSirMacAddr)))) &&
@@ -2685,17 +2681,6 @@ limProcessActionFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,tpPESession ps
                   }
               }
 #endif /* WLAN_FEATURE_RMC */
-              else
-              {
-                 limLog( pMac, LOG1,
-                      FL("Dropping the vendor specific action frame because of( "
-                      "WES Mode not enabled (WESMODE = %d) or OUI mismatch (%02x %02x %02x) or "
-                      "not received with SelfSta Mac address) system role = %d"),
-                      IS_WES_MODE_ENABLED(pMac),
-                      pVendorSpecific->Oui[0], pVendorSpecific->Oui[1],
-                      pVendorSpecific->Oui[2],
-                      psessionEntry->limSystemRole );
-              }
            }
            break;
 #endif /* WLAN_FEATURE_VOWIFI_11R || FEATURE_WLAN_ESE ||
@@ -2721,7 +2706,8 @@ limProcessActionFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,tpPESession ps
                  limSendSmeMgmtFrameInd(pMac, psessionEntry->smeSessionId,
                                         pRxPacketInfo,
                                         psessionEntry,
-                                        WDA_GET_RX_RSSI_DB(pRxPacketInfo));
+                                        WDA_GET_RX_RSSI_DB(pRxPacketInfo),
+                                        RXMGMT_FLAG_NONE);
               }
               else
               {
@@ -2757,7 +2743,7 @@ limProcessActionFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,tpPESession ps
                                     ("Public Action TDLS Discovery RSP ..")) ;
                limSendSmeMgmtFrameInd(pMac, psessionEntry->smeSessionId,
                                       pRxPacketInfo,
-                                      psessionEntry, rssi);
+                                      psessionEntry, rssi, RXMGMT_FLAG_NONE);
            }
                break;
 #endif
@@ -2870,7 +2856,8 @@ limProcessActionFrameNoSession(tpAniSirGlobal pMac, tANI_U8 *pBd)
                   /* Forward to the SME to HDD to wpa_supplicant */
                   // type is ACTION
                   limSendSmeMgmtFrameInd(pMac, 0, pBd, NULL,
-                                         WDA_GET_RX_RSSI_DB(pBd));
+                                         WDA_GET_RX_RSSI_DB(pBd),
+                                         RXMGMT_FLAG_NONE);
                 }
                 else
                 {

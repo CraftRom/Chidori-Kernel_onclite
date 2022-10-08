@@ -2126,7 +2126,7 @@ eHalStatus csrParseBssDescriptionIEs(tHalHandle hHal, tSirBssDescription *pBssDe
 eHalStatus csrGetParsedBssDescriptionIEs(tHalHandle hHal, tSirBssDescription *pBssDesc, tDot11fBeaconIEs **ppIEStruct)
 {
     eHalStatus status = eHAL_STATUS_INVALID_PARAMETER;
-    tpAniSirGlobal pMac = PMAC_STRUCT( hHal );
+    tpAniSirGlobal __maybe_unused pMac = PMAC_STRUCT( hHal );
 
     if(pBssDesc && ppIEStruct)
     {
@@ -3808,6 +3808,33 @@ static void csr_check_sae_auth(tpAniSirGlobal mac_ctx,
 {
 }
 #endif
+
+bool csr_is_pmkid_found_for_peer(tpAniSirGlobal mac,
+                                tCsrRoamSession *session,
+                                tSirMacAddr peer_mac_addr,
+                                uint8_t *pmkid, uint16_t pmkid_count)
+{
+    uint32_t i, index;
+    uint8_t *session_pmkid;
+    tPmkidCacheInfo pmkid_cache;
+
+    vos_mem_zero(&pmkid_cache, sizeof(pmkid_cache));
+    vos_mem_copy(pmkid_cache.BSSID, peer_mac_addr, VOS_MAC_ADDR_SIZE);
+
+    if (!csr_lookup_pmkid_using_bssid(mac, session, &pmkid_cache, &index))
+        return false;
+    session_pmkid = &session->PmkidCacheInfo[index].PMKID[0];
+        for (i = 0; i < pmkid_count; i++) {
+            if (vos_mem_compare(pmkid + (i * CSR_RSN_PMKID_SIZE),
+                session_pmkid, CSR_RSN_PMKID_SIZE))
+                return true;
+            }
+
+    VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_DEBUG,
+            "PMKID in PmkidCacheInfo doesn't match with PMKIDs of peer");
+
+    return false;
+}
 
 tANI_BOOLEAN csrGetRSNInformation( tHalHandle hHal, tCsrAuthList *pAuthType, eCsrEncryptionType enType, tCsrEncryptionList *pMCEncryption,
                                    tDot11fIERSN *pRSNIe,
@@ -6209,6 +6236,9 @@ void csrAddRateBitmap(tANI_U8 rate, tANI_U16 *pRateBitmap)
         case SIR_MAC_RATE_54:
             rateBitmap |= SIR_MAC_RATE_54_BITMAP;
             break;
+        case SIR_MAC_RATE_SAE_H2E:
+            rateBitmap |= SIR_MAC_RATE_SAE_H2E_BITMAP;
+            break;
     }
     *pRateBitmap = rateBitmap;
 }
@@ -6256,6 +6286,9 @@ tANI_BOOLEAN csrIsRateAlreadyPresent(tANI_U8 rate, tANI_U16 rateBitmap)
             break;
         case SIR_MAC_RATE_54:
             rateBitmap &= SIR_MAC_RATE_54_BITMAP;
+            break;
+        case SIR_MAC_RATE_SAE_H2E:
+            rateBitmap &= SIR_MAC_RATE_SAE_H2E_BITMAP;
             break;
     }
     return !!rateBitmap;
@@ -6317,6 +6350,9 @@ tANI_U16 csrRatesMacPropToDot11( tANI_U16 Rate )
             break;
         case SIR_MAC_RATE_54:
             ConvertedRate = 108;
+            break;
+        case SIR_MAC_RATE_SAE_H2E:
+            ConvertedRate = 246;
             break;
 
         case SIR_MAC_RATE_72:
@@ -6973,6 +7009,11 @@ eHalStatus csrSetModifyProfileFields(tpAniSirGlobal pMac, tANI_U32 sessionId,
                                      tCsrRoamModifyProfileFields *pModifyProfileFields)
 {
    tCsrRoamSession *pSession = CSR_GET_SESSION( pMac, sessionId );
+
+   if (!pSession) {
+      smsLog(pMac, LOGE, FL("Session_id invalid %d"), sessionId);
+      return eHAL_STATUS_FAILURE;
+   }
 
    vos_mem_copy(&pSession->connectedProfile.modifyProfileFields,
                  pModifyProfileFields,

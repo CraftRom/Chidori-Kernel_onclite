@@ -601,6 +601,7 @@ typedef struct WLAN_WAPI_KEY *pWLAN_WAPI_KEY;
 #define WPA_GET_LE16(a) ((u16) (((a)[1] << 8) | (a)[0]))
 #define WPA_GET_BE24(a) ((u32) ( (a[0] << 16) | (a[1] << 8) | a[2]))
 #define WLAN_EID_WAPI 68
+#define WLAN_ELEMID_RSNXE 244
 #define WAPI_PSK_AKM_SUITE  0x02721400
 #define WAPI_CERT_AKM_SUITE 0x01721400
 
@@ -1572,6 +1573,10 @@ struct hdd_cache_channels {
 	struct hdd_cache_channel_info *channel_info;
 };
 
+#ifdef FEATURE_WLAN_SW_PTA
+#define WLAN_WAIT_TIME_SW_PTA 1000
+#endif
+
 struct hdd_context_s
 {
    /** Global VOS context  */
@@ -1791,6 +1796,8 @@ struct hdd_context_s
 
     v_BOOL_t btCoexModeSet;
     v_BOOL_t isPnoEnable;
+    bool     is_sco_enabled;
+    bool     is_bt_enabled;
     macAddrSpoof_t spoofMacAddr;
     /* flag to decide if driver need to scan DFS channels or not */
     v_BOOL_t  disable_dfs_flag;
@@ -1863,6 +1870,9 @@ struct hdd_context_s
     struct hdd_cache_channels *original_channels;
     struct mutex cache_channel_lock;
     bool force_rsne_override;
+#ifdef FEATURE_WLAN_SW_PTA
+    struct completion sw_pta_comp;
+#endif
 };
 
 /* Use to notify the TDLS or BTCOEX is mode enable */
@@ -2133,8 +2143,19 @@ hdd_remain_on_chan_ctx_t *hdd_get_remain_on_channel_ctx(hdd_context_t *pHddCtx);
 VOS_STATUS wlan_hdd_handle_dfs_chan_scan(hdd_context_t *pHddCtx,
                                    tANI_U8 dfsScanMode);
 
+#ifdef WLAN_LOGGING_SOCK_SVC_ENABLE
 v_U8_t hdd_is_fw_logging_enabled(void);
 v_U8_t hdd_is_fw_ev_logging_enabled(void);
+#else
+static inline v_U8_t hdd_is_fw_logging_enabled(void)
+{
+	return (FALSE);
+}
+static inline v_U8_t hdd_is_fw_ev_logging_enabled(void)
+{
+	return (FALSE);
+}
+#endif
 
 #define HDD_STA_ID_HASH_MULTIPLIER 2
 
@@ -2314,6 +2335,24 @@ void hdd_disable_roaming(hdd_context_t *hdd_ctx);
  */
 void hdd_restore_roaming(hdd_context_t *hdd_ctx);
 
+/**
+ * hdd_chan_change_notify() - Function to notify about channel change
+ * @adapter: pointer to adapter
+ * @dev: Net device structure
+ * @oper_chan: New operating channel
+ * @phy_mode: phy mode
+ *
+ * This function is used to notify hostapd/supplicant about the channel change
+ *
+ * Return: Success on intimating userspace
+ *
+ */
+VOS_STATUS hdd_chan_change_notify(hdd_adapter_t *adapter,
+        struct net_device *dev,
+        uint8_t oper_chan,
+        eCsrPhyMode phy_mode);
+
+
 int wlan_hdd_check_and_stop_mon(hdd_adapter_t *sta_adapter, bool wait);
 
 /**
@@ -2406,5 +2445,45 @@ static inline void hdd_fill_last_rx(hdd_adapter_t *adapter)
 }
 #else
 void hdd_fill_last_rx(hdd_adapter_t *adapter);
+static inline int wcnss_update_bt_profile(void)
+{
+	return 0;
+}
+
+static inline int wcnss_is_sw_pta_enabled(void)
+{
+	return 0;
+}
+#endif
+
+#ifdef FEATURE_WLAN_SW_PTA
+/**
+ * hdd_process_bt_sco_profile - process BT SCO profile
+ * @hdd_ctx: pointer to HDD context
+ * @bt_enabled: BT status
+ * @bt_adv: BT advertisement status
+ * @ble_enabled: BLE status
+ * @bt_a2dp: BT A2DP status
+ * @bt_sco: BT SCO status
+ *
+ * Return: 0 on success, error on failure
+ */
+int hdd_process_bt_sco_profile(hdd_context_t *hdd_ctx,
+			       bool bt_enabled, bool bt_adv,
+			       bool ble_enabled, bool bt_a2dp,
+			       bool bt_sco);
+
+/**
+ * hdd_is_sw_pta_enabled - is sw pta enabled
+ * @hdd_ctx: pointer to HDD context
+ *
+ * Return: bool
+ */
+bool hdd_is_sw_pta_enabled(hdd_context_t *hdd_ctx);
+#else
+static inline bool hdd_is_sw_pta_enabled(hdd_context_t *hdd_ctx)
+{
+	return 0;
+}
 #endif
 #endif    // end #if !defined( WLAN_HDD_MAIN_H )
