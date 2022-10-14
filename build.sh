@@ -64,8 +64,8 @@ make kernelversion \
 KERN_VER="$(head -n 1 linuxver)"
 BUILD_DATE=$(date '+%Y-%m-%d  %H:%M')
 DEVICE="Redmi 7/Y3"
-KERNELNAME="Chidori-Kernel-$TYPE"
-ZIPNAME="Chidori-Kernel-onclite-$(date '+%Y%m%d%H%M')-$TYPE"
+KERNELNAME="TSUKUYOMI-Kernel-$TYPE"
+ZIPNAME="Tsukuyomi-Kernel-onclite-$(date '+%Y%m%d%H%M')-$TYPE"
 TC_DIR="$HOME/toolchains/proton-clang"
 DEFCONFIG="onclite-perf_defconfig"
 sed -i "52s/.*/CONFIG_LOCALVERSION=\"-${KERNELNAME}\"/g" arch/arm64/configs/$DEFCONFIG
@@ -158,7 +158,7 @@ make O=out ARCH=arm64 $DEFCONFIG
 
 if $regen; then
 	cp out/.config arch/arm64/configs/$DEFCONFIG
-	sed -i "52s/.*/CONFIG_LOCALVERSION=\"-Chidori-Kernel\"/g" arch/arm64/configs/$DEFCONFIG
+	sed -i "52s/.*/CONFIG_LOCALVERSION=\"-Tsukuyomi-Kernel\"/g" arch/arm64/configs/$DEFCONFIG
 	git commit -am "defconfig: onclite: Regenerate" --signoff
 	echo -e "$grn \nRegened defconfig succesfully!\n $nocol"
 	make mrproper
@@ -215,7 +215,7 @@ if [ -f "$kernel" ] && [ -f "$dtbo" ]; then
 	# Push kernel to telegram
 	if ! $do_not_send_to_tg; then
 		push_document "$ZIPNAME-signed.zip" "
-		<b>CHIDORI KERNEL | $DEVICE</b>
+		<b>TSUKUYOMI KERNEL | $DEVICE</b>
 
 		New update available!
 		
