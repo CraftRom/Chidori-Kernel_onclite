@@ -59,7 +59,9 @@ case $TYPE in nightly|stable);; *)TYPE=experimental;; esac
 # debug:
 #echo "`date`: $clean $regen $help $do_not_send_to_tg $TYPE $DESC" >>build_sh.log
 
-KERN_VER=$(echo "$(make kernelversion)")
+make kernelversion \
+    | grep -v make > linuxver & wait $!
+KERN_VER="$(head -n 1 linuxver)"
 BUILD_DATE=$(date '+%Y-%m-%d  %H:%M')
 DEVICE="Redmi 7/Y3"
 KERNELNAME="Chidori-Kernel-$TYPE"
