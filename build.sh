@@ -66,7 +66,7 @@ KERNELNAME="Chidori-Kernel-$TYPE"
 ZIPNAME="Chidori-Kernel-onclite-$(date '+%Y%m%d%H%M')-$TYPE.zip"
 TC_DIR="$HOME/toolchains/proton-clang"
 DEFCONFIG="onclite-perf_defconfig"
-sed -i "52s/.*/CONFIG_LOCALVERSION=\"-${KERNELNAME}\"/g" arch/arm64/configs/$DEFCONFIG
+sed -i "51s/.*/CONFIG_LOCALVERSION=\"-${KERNELNAME}\"/g" arch/arm64/configs/$DEFCONFIG
 
 export PATH="$TC_DIR/bin:$PATH"
 export KBUILD_BUILD_USER="melles1991"
@@ -154,7 +154,7 @@ make O=out ARCH=arm64 $DEFCONFIG
 
 if $regen; then
 	cp out/.config arch/arm64/configs/$DEFCONFIG
-	sed -i "52s/.*/CONFIG_LOCALVERSION=\"-Chidori-Kernel\"/g" arch/arm64/configs/$DEFCONFIG
+	sed -i "51s/.*/CONFIG_LOCALVERSION=\"-Chidori-Kernel\"/g" arch/arm64/configs/$DEFCONFIG
 	git commit -am "defconfig: onclite: Regenerate" --signoff
 	echo -e "$grn \nRegened defconfig succesfully!\n $nocol"
 	make mrproper
@@ -228,7 +228,7 @@ if [ -f "$kernel" ] && [ -f "$dtbo" ]; then
 	fi
 
 	# TEMP
-	sed -i "52s/-experimental//" arch/arm64/configs/$DEFCONFIG
+	sed -i "51s/-experimental//" arch/arm64/configs/$DEFCONFIG
 else
 	echo -e "$red \nKernel Compilation failed! Fix the errors!\n $nocol"
 	# Push message if build error
