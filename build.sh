@@ -65,7 +65,7 @@ KERN_VER="$(head -n 1 linuxver)"
 BUILD_DATE=$(date '+%Y-%m-%d  %H:%M')
 DEVICE="Redmi 7/Y3"
 KERNELNAME="Chidori-Kernel-$TYPE"
-ZIPNAME="Chidori-Kernel-onclite-$(date '+%Y%m%d%H%M')-$TYPE.zip"
+ZIPNAME="Chidori-Kernel-onclite-$(date '+%Y%m%d%H%M')-$TYPE"
 TC_DIR="$HOME/toolchains/proton-clang"
 DEFCONFIG="onclite-perf_defconfig"
 sed -i "51s/.*/CONFIG_LOCALVERSION=\"-${KERNELNAME}\"/g" arch/arm64/configs/$DEFCONFIG
@@ -73,6 +73,8 @@ sed -i "51s/.*/CONFIG_LOCALVERSION=\"-${KERNELNAME}\"/g" arch/arm64/configs/$DEF
 export PATH="$TC_DIR/bin:$PATH"
 export KBUILD_BUILD_USER="melles1991"
 export KBUILD_BUILD_HOST=CraftRom-build
+
+EXCLUDE="Makefile *.git* *.jar* *placeholder* *.md*"
 
 # Builder detection
 [ -n "$HOSTNAME" ] && NAME=$HOSTNAME
@@ -199,7 +201,10 @@ if [ -f "$kernel" ] && [ -f "$dtbo" ]; then
 	cp $kernel $dtbo AnyKernel3
 	rm -f *zip
 	cd AnyKernel3
-	zip -r9 "../$ZIPNAME" * -x '*.git*' README.md *placeholder
+	echo -e "$blue    \nCreating ZIP: $ZIPNAME.zip.zip\n $nocol"
+	zip -r9 "../$ZIPNAME.zip" . -q -x $EXCLUDE README.md *placeholder
+	echo -e "$blue    \nSigning zip with aosp keys...\n $nocol"
+	java -jar *.jar* "../$ZIPNAME.zip" "../$ZIPNAME-signed.zip"
 	cd ..
 	echo -e "$grn \n(i)          Completed build$nocol $red$((SECONDS / 60))$nocol $grn minute(s) and$nocol $red$((SECONDS % 60))$nocol $grn second(s) !$nocol"
 	echo -e "$blue    \n             Flashable zip generated $yellow$ZIPNAME.\n $nocol"
@@ -209,7 +214,7 @@ if [ -f "$kernel" ] && [ -f "$dtbo" ]; then
 
 	# Push kernel to telegram
 	if ! $do_not_send_to_tg; then
-		push_document "$ZIPNAME" "
+		push_document "$ZIPNAME-signed.zip" "
 		<b>CHIDORI KERNEL | $DEVICE</b>
 
 		New update available!
@@ -222,7 +227,7 @@ if [ -f "$kernel" ] && [ -f "$dtbo" ]; then
 		<b>Type:</b> <code>$TYPE</code>
 		<b>BuildDate:</b> <code>$BUILD_DATE</code>
 		<b>Filename:</b> <code>$ZIPNAME</code>
-		<b>md5 checksum :</b> <code>$(md5sum "$ZIPNAME" | cut -d' ' -f1)</code>
+		<b>md5 checksum :</b> <code>$(md5sum "$ZIPNAME-signed.zip" | cut -d' ' -f1)</code>
 
 		#onclite #onc #kernel"
 
