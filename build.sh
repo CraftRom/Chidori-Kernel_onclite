@@ -67,7 +67,7 @@ make kernelversion \
 KERN_VER="$(head -n 1 linuxver)"
 BUILD_DATE=$(date '+%Y-%m-%d  %H:%M')
 DEVICE="Redmi 7/Y3"
-KERNELNAME="TSUKUYOMI-Kernel-$TYPE"
+KERNELNAME="Tsukuyomi-Kernel-$TYPE"
 ZIPNAME="Tsukuyomi-Kernel-onclite-$(date '+%Y%m%d%H%M')-$TYPE"
 TC_DIR="$HOME/toolchains/proton-clang"
 DEFCONFIG="onclite-perf_defconfig"
