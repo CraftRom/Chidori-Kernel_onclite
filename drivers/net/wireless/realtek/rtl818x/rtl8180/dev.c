@@ -315,7 +315,7 @@ static void rtl8180_handle_rx(struct ieee80211_hw *dev)
 			rx_status.mactime = tsft;
 			rx_status.flag |= RX_FLAG_MACTIME_START;
 			if (flags & RTL818X_RX_DESC_FLAG_SPLCP)
-				rx_status.flag |= RX_FLAG_SHORTPRE;
+				rx_status.enc_flags |= RX_ENC_FLAG_SHORTPRE;
 			if (flags & RTL818X_RX_DESC_FLAG_CRC32_ERR)
 				rx_status.flag |= RX_FLAG_FAILED_FCS_CRC;
 
@@ -460,10 +460,8 @@ static void rtl8180_tx(struct ieee80211_hw *dev,
 	struct rtl8180_priv *priv = dev->priv;
 	struct rtl8180_tx_ring *ring;
 	struct rtl8180_tx_desc *entry;
-	unsigned int prio = 0;
 	unsigned long flags;
-	unsigned int idx, hw_prio;
-
+	unsigned int idx, prio, hw_prio;
 	dma_addr_t mapping;
 	u32 tx_flags;
 	u8 rc_flags;
@@ -472,9 +470,7 @@ static void rtl8180_tx(struct ieee80211_hw *dev,
 	/* do arithmetic and then convert to le16 */
 	u16 frame_duration = 0;
 
-	/* rtl8180/rtl8185 only has one useable tx queue */
-	if (dev->queues > IEEE80211_AC_BK)
-		prio = skb_get_queue_mapping(skb);
+	prio = skb_get_queue_mapping(skb);
 	ring = &priv->tx_ring[prio];
 
 	mapping = pci_map_single(priv->pdev, skb->data,
@@ -1880,6 +1876,8 @@ static int rtl8180_probe(struct pci_dev *pdev,
 		ieee80211_hw_set(dev, SIGNAL_DBM);
 	else
 		ieee80211_hw_set(dev, SIGNAL_UNSPEC);
+
+	wiphy_ext_feature_set(dev->wiphy, NL80211_EXT_FEATURE_CQM_RSSI_LIST);
 
 	rtl8180_eeprom_read(priv);
 
