@@ -50,12 +50,43 @@ clean() {
 	if [  -d "./out/" ]; then
 		echo -e " "
 		rm -rf ./out/
+		make clean
 	fi
 	echo -e "${GREEN} \nFull cleaning was successful succesfully!\n ${NOCOLOR}"
 	sleep 5
 	exit 1
 }
 
+regen() {
+    cp out/.config "arch/arm64/configs/$DEFCONFIG"
+	sed -i '52s/.*/CONFIG_LOCALVERSION="-Chidori-Kernel"/' "arch/arm64/configs/$DEFCONFIG"
+	git commit -am 'defconfig: onclite: Regenerate' --signoff
+	echo -e "${GREEN} Regened defconfig successfully!\n ${NOCOLOR}"
+	make clean
+	echo -e "${GREEN} Cleaning was successful successfully!\n ${NOCOLOR}"
+	sleep 10
+	exit 0
+}
+
+desc() {
+    echo -en "\nYou did not specify the build's description! Do you want to set it?\n(Y/n): "
+    read -r ans
+    case "$ans" in
+        n)
+            echo -e "\nOK, the build will have no description...\n"
+            ;;
+        y)
+            echo -en "\nType in the build's description: "
+            read -r DESC
+            echo -e "\nOK, saved!\n"
+            sleep 1.5
+            ;;
+		*)
+            echo -e "\nTry again!\n"
+			desc
+            ;;	
+    esac
+}
 TYPE=nightly
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -186,33 +217,17 @@ push_document() {
 }
 
 # Export defconfig
-echo -e "${BLUE}    \nMake DefConfig\n ${NOCOLOR}"
+echo -e "${BLUE} Make DefConfig\n ${NOCOLOR}"
 mkdir -p out
-make O=out ARCH=arm64 $DEFCONFIG
+make -j$(nproc) O=out ARCH=arm64 "$DEFCONFIG"
 
 if $regen; then
-	cp out/.config arch/arm64/configs/$DEFCONFIG
-	sed -i "52s/.*/CONFIG_LOCALVERSION=\"-Chidori-Kernel\"/g" arch/arm64/configs/$DEFCONFIG
-	git commit -am "defconfig: onclite: Regenerate" --signoff
-	echo -e "${GREEN]} \nRegened defconfig succesfully!\n ${NOCOLOR}"
-	make mrproper
-	echo -e "${GREEN} \nCleaning was successful succesfully!\n ${NOCOLOR}"
-	sleep 4
-	exit 0
+regen
 fi
 
-# Description check
+# Check for description
 if ! $description_was_specified; then
-	echo -en "\n\tYou did not specify the build's description! Do you want to set it?\n\t(Y/n): "
-	read ans
-	case $ans in n)echo -e "\tOK, the build will have no description...\n";;
-	*)
-		echo -en "\n\t\tType in the build's description: "
-		read DESC
-		echo -e "\n\tOK, saved!\n"
-		sleep 1.5
-		;;
-	esac
+desc
 fi
 
 # Build start
