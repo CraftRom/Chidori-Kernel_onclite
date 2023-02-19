@@ -1,29 +1,27 @@
-__dtbo := $(sort $(dtbo-y))
+dtbo_list := $(sort $(dtbo-y))
+dtbo_base := $(sort $(foreach dtbo,$(dtbo_list),$($(dtbo)-base)))
+dtbo := $(foreach dtbo,$(dtbo_list),$(if $($(dtbo)-base),$(dtbo)))
 
-dtbo-base	:= $(sort $(foreach m,$(__dtbo),$($(m)-base)))
-dtbo := $(foreach m,$(__dtbo),$(if $($(m)-base),$(m)))
+dtbo_list := $(addprefix $(obj)/,$(dtbo_list))
+dtbo_base := $(addprefix $(obj)/,$(dtbo_base))
+dtbo := $(addprefix $(obj)/,$(dtbo))
 
-__dtbo     := $(addprefix $(obj)/,$(__dtbo))
-dtbo-base	:= $(addprefix $(obj)/,$(dtbo-base))
-dtbo	:= $(addprefix $(obj)/,$(dtbo))
-
-ifneq ($(DTC_OVERLAY_TEST_EXT),)
-DTC_OVERLAY_TEST = $(DTC_OVERLAY_TEST_EXT)
-quiet_cmd_dtbo_verify	= VERIFY  $@
-cmd_dtbo_verify = $(foreach m,\
-	$(addprefix $(obj)/,$($(@F)-base)),\
-		$(if $(m),\
-			$(DTC_OVERLAY_TEST) $(m) $@ \
-			$(dot-target).$(patsubst $(obj)/%.dtb,%,$(m)).tmp;))\
-			true
+ifeq ($(DTC_OVERLAY_TEST_EXT),)
+  cmd_dtbo_verify = true
 else
-cmd_dtbo_verify = true
+  DTC_OVERLAY_TEST := $(DTC_OVERLAY_TEST_EXT)
+  quiet_cmd_dtbo_verify = VERIFY  $@
+  cmd_dtbo_verify = $(foreach dtbo_base,$(addprefix $(obj)/,$($(@F)-base)),\
+    $(if $(dtbo_base),\
+      $(DTC_OVERLAY_TEST) $(dtbo_base) $@ \
+      $(dot-target).$(patsubst $(obj)/%.dtb,%,$(dtbo_base)).tmp;))\
+      true
 endif
 
-$(obj)/%.dtbo: $(src)/%.dts FORCE
+$(dtbo): $(obj)/%.dtbo: $(src)/%.dts FORCE
 	$(call if_changed_dep,dtc)
 	$(call if_changed,dtbo_verify)
 
 $(call multi_depend, $(dtbo), , -base)
 
-always +=  $(dtbo)
+always += $(dtbo)
