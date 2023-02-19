@@ -26,6 +26,7 @@ clean=false
 regen=false
 do_not_send_to_tg=false
 description_was_specified=false
+DEFCONFIG="onclite-perf_defconfig"
 
 # Function to print usage
 usage() {
@@ -49,36 +50,43 @@ usage() {
 clean() {
 	if [  -d "./out/" ]; then
 		echo -e " "
-		rm -rf ./out/
 		make clean
+		rm -rf ./out/
 	fi
+	rm -f *zip
 	echo -e "${GREEN} \nFull cleaning was successful succesfully!\n ${NOCOLOR}"
 	sleep 5
 	exit 1
 }
 
 regen() {
+    # Export defconfig
+    echo -e "${BLUE}--   Make DefConfig\n ${NOCOLOR}"
+    mkdir -p out
+    make -j$(nproc) O=out ARCH=arm64 "$DEFCONFIG"
+
     cp out/.config "arch/arm64/configs/$DEFCONFIG"
 	sed -i '52s/.*/CONFIG_LOCALVERSION="-Chidori-Kernel"/' "arch/arm64/configs/$DEFCONFIG"
 	git commit -am 'defconfig: onclite: Regenerate' --signoff
-	echo -e "${GREEN} Regened defconfig successfully!\n ${NOCOLOR}"
+	echo -e "${GREEN}Regened defconfig successfully!\n ${NOCOLOR}"
 	make clean
-	echo -e "${GREEN} Cleaning was successful successfully!\n ${NOCOLOR}"
+	echo -e "${GREEN}Cleaning was successful successfully!\n ${NOCOLOR}"
 	sleep 10
 	exit 0
 }
 
 desc() {
-    echo -en "\nYou did not specify the build's description! Do you want to set it?\n(Y/n): "
+    echo -en "\nYou did not specify the build's description! Do you want to set it?\n(${GREEN}Y${NOCOLOR}/${RED}N${NOCOLOR}): "
     read -r ans
     case "$ans" in
         n)
-            echo -e "\nOK, the build will have no description...\n"
+            echo -e "\n${YELLOW}OK, the build will have no description...${NOCOLOR}\n"
             ;;
         y)
-            echo -en "\nType in the build's description: "
+            echo -en "Type in the build's description: "
             read -r DESC
-            echo -e "\nOK, saved!\n"
+            echo -e "${GREEN}OK, saved!${NOCOLOR}"
+			echo -e "${BOLD}Description:${NORMAL} ${GREEN}$DESC ${NOCOLOR}\n"
             sleep 1.5
             ;;
 		*)
@@ -87,14 +95,14 @@ desc() {
             ;;	
     esac
 }
-TYPE=nightly
+
 while [[ $# -gt 0 ]]; do
   case $1 in
     -c|--clean)
 	  clean
       ;;
-    -r|--regen*)
-      regen=true
+    -r|--regen)
+      regen
       ;;
     -l|--local*)
       do_not_send_to_tg=true
@@ -158,6 +166,8 @@ sed -i "52s/.*/CONFIG_LOCALVERSION=\"-$KERNEL_NAME\"/g" arch/arm64/configs/$DEFC
 export PATH="$TC_DIR/bin:$PATH"
 export KBUILD_BUILD_USER="melles1991"
 export KBUILD_BUILD_HOST="CraftRom-build"
+kernel="out/arch/arm64/boot/Image.gz-dtb"
+dtbo="out/arch/arm64/boot/dtbo.img"
 
 # Set exclude patterns for tar command
 EXCLUDE="Makefile *.git* *.jar* *placeholder* *.md*"
@@ -166,24 +176,24 @@ EXCLUDE="Makefile *.git* *.jar* *placeholder* *.md*"
 # Set builder name based on hostname
 if [[ -n "$HOSTNAME" ]]; then
     case $HOSTNAME in
-        IgorK-*)
-            BUILDER='@DfP_DEV'
+        melles*)
+            BUILDER='@mrshterben'
             ;;
         *)
-            BUILDER='@mrshterben'
+            BUILDER='unknown'
             ;;
     esac
 fi
 
 # Print build information
-echo -e "${BOLD}Type:${NORMAL} $TYPE"
-echo -e "${BOLD}Config:${NORMAL} $DEFCONFIG"
-echo -e "${BOLD}ARCH:${NORMAL} arm64"
-echo -e "${BOLD}Linux:${NORMAL} $KERN_VER"
-echo -e "${BOLD}Username:${NORMAL} $KBUILD_BUILD_USER"
-echo -e "${BOLD}Builder:${NORMAL} $BUILDER"
-echo -e "${BOLD}BuildDate:${NORMAL} $BUILD_DATE"
-echo -e "${BOLD}Filename:${NORMAL} $ZIP_NAME"
+echo -e "${BOLD}[Type]      :${NORMAL} $TYPE"
+echo -e "${BOLD}[Config]    :${NORMAL} $DEFCONFIG"
+echo -e "${BOLD}[ARCH]      :${NORMAL} arm64"
+echo -e "${BOLD}[Linux]     :${NORMAL} $KERN_VER"
+echo -e "${BOLD}[Username]  :${NORMAL} $KBUILD_BUILD_USER"
+echo -e "${BOLD}[Builder]   :${NORMAL} $BUILDER"
+echo -e "${BOLD}[BuildDate] :${NORMAL} $BUILD_DATE"
+echo -e "${BOLD}[Filename]  :${NORMAL} $ZIP_NAME"
 echo -e ""
 
 # Clone Proton Clang if not already present
@@ -194,7 +204,6 @@ if [[ ! -d "$TC_DIR" ]]; then
 		exit 1
 	fi
 fi
-
 
 # Telegram setup
 push_message() {
@@ -216,78 +225,80 @@ push_document() {
         -F "disable_web_page_preview=true"
 }
 
-# Export defconfig
-echo -e "${BLUE} Make DefConfig\n ${NOCOLOR}"
-mkdir -p out
-make -j$(nproc) O=out ARCH=arm64 "$DEFCONFIG"
-
-if $regen; then
-regen
-fi
-
 # Check for description
 if ! $description_was_specified; then
 desc
 fi
 
-# Build start
-echo -e "${BLUE}    \nStarting kernel compilation...\n ${NOCOLOR}"
-make -j$(nproc --all) O=out ARCH=arm64 CC="ccache clang" LD="ccache ld.lld" AS=llvm-as AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu- Image.gz-dtb dtbo.img
+    # Export defconfig
+    echo -e "${BLUE}--   Make DefConfig\n ${NOCOLOR}"
+    mkdir -p out
+    make -j$(nproc) O=out ARCH=arm64 "$DEFCONFIG"
+	
+    # Start kernel compilation
+    echo -e "${BLUE}\n--   Starting kernel compilation...\n${NOCOLOR}"
+    make -j$(nproc) O=out ARCH=arm64 CC="ccache clang" LD="ccache ld.lld" AS=llvm-as AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu- Image.gz-dtb dtbo.img
 
+    # Check if kernel and dtbo files exist
+    if [ -f "out/arch/arm64/boot/Image.gz-dtb" ] && [ -f "out/arch/arm64/boot/dtbo.img" ]; then
+        echo -e "${BLUE}\nKernel compiled successfully! Zipping up...\n${NOCOLOR}"
 
-kernel="out/arch/arm64/boot/Image.gz-dtb"
-dtbo="out/arch/arm64/boot/dtbo.img"
-
-if [ -f "$kernel" ] && [ -f "$dtbo" ]; then
-	echo -e "${BLUE}    \nKernel compiled succesfully! Zipping up...\n ${NOCOLOR}"
-	if ! [ -d "AnyKernel3" ]; then
-		echo -e "${GREEN} \nAnyKernel3 not found! Cloning...\n ${NOCOLOR}"
-		if ! git clone https://github.com/CraftRom/AnyKernel3 -b onclite AnyKernel3; then
-			echo -e "${GREEN} \nCloning failed! Aborting...\n ${NOCOLOR}"
-		fi
-	fi
-
-	cp $kernel $dtbo AnyKernel3
-	rm -f *zip
-	cd AnyKernel3
-	echo -e "${BLUE}    \nCreating ZIP: $ZIP_NAME.zip.zip\n ${NOCOLOR}"
-	zip -r9 "../$ZIP_NAME.zip" . -q -x $EXCLUDE README.md *placeholder
-	echo -e "${BLUE}    \nSigning zip with aosp keys...\n ${NOCOLOR}"
-	java -jar *.jar* "../$ZIP_NAME.zip" "../$ZIP_NAME-signed.zip"
-	cd ..
-	echo -e "${GREEN} \n(i)          Completed build${NOCOLOR} ${RED}$((SECONDS / 60))${NOCOLOR} ${GREEN} minute(s) and${NOCOLOR} ${RED}$((SECONDS % 60))${NOCOLOR} ${GREEN} second(s) !${NOCOLOR}"
-	echo -e "${BLUE}    \n             Flashable zip generated ${YELLOW}$ZIP_NAME.\n ${NOCOLOR}"
+    # Clone AnyKernel3 if not already present
+    if ! [ -d "AnyKernel3" ]; then
+        echo -e "${GREEN}\nAnyKernel3 not found! Cloning...\n${NOCOLOR}"
+        if ! git clone https://github.com/CraftRom/AnyKernel3 -b onclite AnyKernel3; then
+            echo -e "${GREEN}\nCloning failed! Aborting...\n${NOCOLOR}"
+            sleep 10
+			exit 1
+        fi
+		
+	# Move kernel and dtbo files to AnyKernel3 directory
+	# Remove old ZIP files
+    mv out/arch/arm64/boot/Image.gz-dtb out/arch/arm64/boot/dtbo.img AnyKernel3/ && rm -f *zip
+	# Create new ZIP file
+    cd AnyKernel3
+    ZIP_CMD="zip -r9 ../$ZIP_NAME.zip . -q -x $EXCLUDE README.md *placeholder"
+	echo -e "${BLUE}\n--   Creating ZIP: $ZIP_NAME.zip.zip\n${NOCOLOR}"
+    eval $ZIP_CMD
+	# Sign the ZIP file with AOSP keys
+    echo -e "${BLUE}\n--   Signing zip with aosp keys...\n${NOCOLOR}"
+    JAVA_CMD="java -jar *.jar* ../$ZIP_NAME.zip ../$ZIP_NAME-signed.zip"
+    eval $JAVA_CMD
+	# Delete temporary files
 	rm -rf out/arch/arm64/boot
+    cd ..
+	
+	if [[ -f "$ZIP_NAME-signed.zip" ]]; then
+    # Push kernel to Telegram
+    if ! $do_not_send_to_tg; then
+        push_document "$ZIP_NAME-signed.zip" "
+        <b>CHIDORI KERNEL | $DEVICE</b>
 
+        New update available!
 
+        <i>${DESC:-No description given...}</i>
 
-	# Push kernel to telegram
-	if ! $do_not_send_to_tg; then
-		push_document "$ZIP_NAME-signed.zip" "
-		<b>CHIDORI KERNEL | $DEVICE</b>
+        <b>Maintainer:</b> <code>$KBUILD_BUILD_USER</code>
+        <b>Builder:</b> $BUILDER
+        <b>Linux:</b> <code>$KERN_VER</code>
+        <b>Type:</b> <code>$TYPE</code>
+        <b>BuildDate:</b> <code>$BUILD_DATE</code>
+        <b>Filename:</b> <code>$ZIP_NAME</code>
+        <b>md5 checksum:</b> <code>$(md5sum "$ZIP_NAME-signed.zip" | cut -d' ' -f1)</code>
 
-		New update available!
-		
-		<i>${DESC:-No description given...}</i>
-		
-		<b>Maintainer:</b> <code>$KBUILD_BUILD_USER</code>
-		<b>Builder:</b> $BUILDER
-		<b>Linux:</b> <code>$KERN_VER</code>
-		<b>Type:</b> <code>$TYPE</code>
-		<b>BuildDate:</b> <code>$BUILD_DATE</code>
-		<b>Filename:</b> <code>$ZIP_NAME</code>
-		<b>md5 checksum :</b> <code>$(md5sum "$ZIP_NAME-signed.zip" | cut -d' ' -f1)</code>
+        #onclite #onc #kernel"
 
-		#onclite #onc #kernel"
+        echo -e "${GREEN}\n(i) Send to telegram successfully!\n${NOCOLOR}"
+    fi
 
-		echo -e "${GREEN} \n\n(i)          Send to telegram succesfully!\n ${NOCOLOR}"
-	fi
+    # Remove the "-experimental" from the kernel config file
+    sed -i "52s/-experimental//" arch/arm64/configs/$DEFCONFIG
 
-	# TEMP
-	sed -i "52s/-experimental//" arch/arm64/configs/$DEFCONFIG
+    # Output the completion message
+    echo -e "${GREEN}\n(i) Completed build in $((SECONDS / 60)) minute(s) and $((SECONDS % 60)) second(s)!\n${NOCOLOR}"
+    echo -e "${BLUE}\nFlashable zip generated: ${YELLOW}$ZIP_NAME\n${NOCOLOR}"
 else
-	echo -e "${RED} \nKernel Compilation failed! Fix the errors!\n ${NOCOLOR}"
-	# Push message if build error
-	push_message "$BUILDER! <b>Failed building kernel for <code>$DEVICE</code> Please fix it...!</b>"
-
+    # Output the error message and push notification
+    echo -e "${RED}\nKernel Compilation failed! Fix the errors!\n${NOCOLOR}"
+    push_message "$BUILDER! <b>Failed building kernel for <code>$DEVICE</code> Please fix it...!</b>"
 fi
