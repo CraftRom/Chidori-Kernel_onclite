@@ -208,7 +208,7 @@ fi
 # Telegram setup
 push_message() {
     curl -s -X POST \
-        https://api.telegram.org/bot5579959772:AAHJ1cvfipl05kxYhNQBvLy7b60vGmeQSRE/sendMessage \
+        https://api.telegram.org/$BOT/sendMessage \
         -d chat_id="-1001695676652" \
         -d text="$1" \
         -d "parse_mode=html" \
@@ -217,7 +217,7 @@ push_message() {
 
 push_document() {
     curl -s -X POST \
-        https://api.telegram.org/bot5579959772:AAHJ1cvfipl05kxYhNQBvLy7b60vGmeQSRE/sendDocument \
+        https://api.telegram.org/$BOT/sendDocument \
         -F chat_id="-1001695676652" \
         -F document=@"$1" \
         -F caption="$2" \
@@ -251,7 +251,7 @@ fi
             sleep 10
 			exit 1
         fi
-		
+	fi	
 	# Move kernel and dtbo files to AnyKernel3 directory
 	# Remove old ZIP files
     mv out/arch/arm64/boot/Image.gz-dtb out/arch/arm64/boot/dtbo.img AnyKernel3/ && rm -f *zip
@@ -301,4 +301,5 @@ else
     # Output the error message and push notification
     echo -e "${RED}\nKernel Compilation failed! Fix the errors!\n${NOCOLOR}"
     push_message "$BUILDER! <b>Failed building kernel for <code>$DEVICE</code> Please fix it...!</b>"
+fi
 fi

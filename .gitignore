@@ -130,3 +130,4 @@ Android.bp
 /clang/
 *.zip
 build.log
+start.sh
