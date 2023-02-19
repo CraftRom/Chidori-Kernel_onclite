@@ -7,6 +7,7 @@
 # for more details.
 #
 # Copyright (C) 1995 by Linus Torvalds
+# Copyright (C) 2023 by ChatGPT
 #
 # Adapted from code in arch/i386/boot/Makefile by H. Peter Anvin
 # Adapted from code in arch/i386/boot/install.sh by Russell King
@@ -20,41 +21,46 @@
 #   $4 - default install path (blank if root directory)
 #
 
+# Enable strict error checking
+set -euo pipefail
+
+# Verify that the kernel image and map files exist
 verify () {
 	if [ ! -f "$1" ]; then
-		echo ""                                                   1>&2
-		echo " *** Missing file: $1"                              1>&2
-		echo ' *** You need to run "make" before "make install".' 1>&2
-		echo ""                                                   1>&2
+		echo "" >&2
+		echo " *** Missing file: $1" >&2
+		echo ' *** You need to run "make" before "make install".' >&2
+		echo "" >&2
 		exit 1
 	fi
 }
-
-# Make sure the files actually exist
 verify "$2"
 verify "$3"
 
-# User may have a custom install script
-if [ -x ~/bin/${INSTALLKERNEL} ]; then exec ~/bin/${INSTALLKERNEL} "$@"; fi
-if [ -x /sbin/${INSTALLKERNEL} ]; then exec /sbin/${INSTALLKERNEL} "$@"; fi
+# Check for a custom install script and run it if it exists
+for path in ~/bin/${INSTALLKERNEL} /sbin/${INSTALLKERNEL}; do
+	if [ -x "$path" ]; then
+		exec "$path" "$@"
+	fi
+done
 
-if [ "$(basename $2)" = "Image.gz" ]; then
-# Compressed install
-  echo "Installing compressed kernel"
-  base=vmlinuz
+# Determine whether the kernel image is compressed or not
+if [ "$(basename "$2")" = "Image.gz" ]; then
+	echo "Installing compressed kernel"
+	base=vmlinuz
 else
-# Normal install
-  echo "Installing normal kernel"
-  base=vmlinux
+	echo "Installing normal kernel"
+	base=vmlinux
 fi
 
-if [ -f $4/$base-$1 ]; then
-  mv $4/$base-$1 $4/$base-$1.old
+# Install the kernel image file
+if [ -f "$4/$base-$1" ]; then
+	mv --backup=numbered "$4/$base-$1" "$4/$base-$1.old"
 fi
-cat $2 > $4/$base-$1
+cp "$2" --remove-destination "$4/$base-$1"
 
-# Install system map file
-if [ -f $4/System.map-$1 ]; then
-  mv $4/System.map-$1 $4/System.map-$1.old
+# Install the system map file
+if [ -f "$4/System.map-$1" ]; then
+	mv --backup=numbered "$4/System.map-$1" "$4/System.map-$1.old"
 fi
-cp $3 $4/System.map-$1
+cp "$3" --remove-destination "$4/System.map-$1"
