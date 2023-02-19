@@ -13,6 +13,9 @@
 #
 # Based on the ia64 boot/Makefile.
 #
+# Copyright (C) 2023, ChatGPT.
+# Author: Dmytro Galytskyi <melles.android@gmail.com>
+#
 
 include $(srctree)/arch/arm64/boot/dts/Makefile
 
@@ -21,25 +24,23 @@ OBJCOPYFLAGS_Image :=-O binary -R .note -R .note.gnu.build-id -R .comment -S
 targets := Image Image.bz2 Image.gz Image.lz4 Image.lzma Image.lzo dtbo.img
 
 DTB_NAMES := $(subst $\",,$(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES))
-ifneq ($(DTB_NAMES),)
-DTB_LIST := $(addsuffix .dtb,$(DTB_NAMES))
-DTB_OBJS := $(addprefix $(obj)/dts/,$(DTB_LIST))
+ifeq ($(strip $(DTB_NAMES)),)
+DTB_OBJS := $(shell find $(obj)/dts/ -name "*.dtb")
 else
-DTB_OBJS := $(shell find $(obj)/dts/ -name \*.dtb)
+DTB_OBJS := $(addprefix $(obj)/dts/,$(addsuffix .dtb,$(DTB_NAMES)))
 endif
 
-DTBO_OBJS := $(shell find $(obj)/dts/ -name \*.dtbo)
+DTBO_OBJS := $(shell find $(obj)/dts/ -name "*.dtbo")
 
-# Add RTIC DTB to the DTB list if RTIC MPGen is enabled
 ifdef RTIC_MPGEN
 DTB_OBJS += rtic_mp.dtb
 endif
 
 rtic_mp.dtb: vmlinux FORCE
-	$(RTIC_MPGEN) --objcopy="${OBJCOPY}" --objdump="${OBJDUMP}" \
-	--binpath="" --vmlinux="vmlinux" --config=${KCONFIG_CONFIG} \
-	--cc="${CC}" --dts=rtic_mp.dts && \
-	$(DTC) -O dtb -o rtic_mp.dtb -b 0 $(DTC_FLAGS) rtic_mp.dts
+	$(RTIC_MPGEN) --objcopy="$(OBJCOPY)" --objdump="$(OBJDUMP)" \
+	--binpath="" --vmlinux="vmlinux" --config=$(KCONFIG_CONFIG) \
+	--cc="$(CC)" --dts=rtic_mp.dts && \
+	$(DTC) -O dtb -o $@ -b 0 $(DTC_FLAGS) $<
 
 $(obj)/Image: vmlinux FORCE
 	$(call if_changed,objcopy)
@@ -72,10 +73,6 @@ $(obj)/Image.gz-dtb: $(obj)/Image.gz $(DTB_OBJS) FORCE
 $(obj)/dtbo.img: $(DTBO_OBJS) FORCE
 	$(call if_changed,mkdtimg)
 
-install:
+install zinstall:
 	$(CONFIG_SHELL) $(srctree)/$(src)/install.sh $(KERNELRELEASE) \
-	$(obj)/Image System.map "$(INSTALL_PATH)"
-
-zinstall:
-	$(CONFIG_SHELL) $(srctree)/$(src)/install.sh $(KERNELRELEASE) \
-	$(obj)/Image.gz System.map "$(INSTALL_PATH)"
+	$(obj)/$(subst install,Image,$@) System.map "$(INSTALL_PATH)"
