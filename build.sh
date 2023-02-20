@@ -92,7 +92,7 @@ desc() {
 		*)
             echo -e "\nTry again!\n"
 			desc
-            ;;	
+            ;;
     esac
 }
 
@@ -234,7 +234,7 @@ fi
     echo -e "${BLUE}--   Make DefConfig\n ${NOCOLOR}"
     mkdir -p out
     make -j$(nproc) O=out ARCH=arm64 "$DEFCONFIG"
-	
+
     # Start kernel compilation
     echo -e "${BLUE}\n--   Starting kernel compilation...\n${NOCOLOR}"
     make -j$(nproc) O=out ARCH=arm64 CC="ccache clang" LD="ccache ld.lld" AS=llvm-as AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu- Image.gz-dtb dtbo.img
@@ -251,7 +251,7 @@ fi
             sleep 10
 			exit 1
         fi
-	fi	
+	fi
 	# Move kernel and dtbo files to AnyKernel3 directory
 	# Remove old ZIP files
     mv out/arch/arm64/boot/Image.gz-dtb out/arch/arm64/boot/dtbo.img AnyKernel3/ && rm -f *zip
@@ -267,26 +267,26 @@ fi
 	# Delete temporary files
 	rm -rf out/arch/arm64/boot
     cd ..
-	
+
 	if [[ -f "$ZIP_NAME-signed.zip" ]]; then
     # Push kernel to Telegram
     if ! $do_not_send_to_tg; then
         push_document "$ZIP_NAME-signed.zip" "
-        <b>CHIDORI KERNEL | $DEVICE</b>
+<b>CHIDORI KERNEL | $DEVICE</b>
 
-        New update available!
+New update available!
 
-        <i>${DESC:-No description given...}</i>
+<i>${DESC:-No description given...}</i>
 
-        <b>Maintainer:</b> <code>$KBUILD_BUILD_USER</code>
-        <b>Builder:</b> $BUILDER
-        <b>Linux:</b> <code>$KERN_VER</code>
-        <b>Type:</b> <code>$TYPE</code>
-        <b>BuildDate:</b> <code>$BUILD_DATE</code>
-        <b>Filename:</b> <code>$ZIP_NAME</code>
-        <b>md5 checksum:</b> <code>$(md5sum "$ZIP_NAME-signed.zip" | cut -d' ' -f1)</code>
+<b>Maintainer:</b> <code>$KBUILD_BUILD_USER</code>
+<b>Builder:</b> $BUILDER
+<b>Linux:</b> <code>$KERN_VER</code>
+<b>Type:</b> <code>$TYPE</code>
+<b>BuildDate:</b> <code>$BUILD_DATE</code>
+<b>Filename:</b> <code>$ZIP_NAME</code>
+<b>md5 checksum:</b> <code>$(md5sum "$ZIP_NAME-signed.zip" | cut -d' ' -f1)</code>
 
-        #onclite #onc #kernel"
+#onclite #onc #kernel"
 
         echo -e "${GREEN}\n(i) Send to telegram successfully!\n${NOCOLOR}"
     fi
