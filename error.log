@@ -1,7 +1,9 @@
 [0;34m--   Make DefConfig
  [0m
 make[1]: Entering directory '/home/melles1991/craftrom/kernel/android_kernel_xiaomi_onclite/out'
+  HOSTCC  scripts/basic/fixdep
   GEN     ./Makefile
+  HOSTCC  scripts/basic/bin2c
   HOSTCC  scripts/kconfig/conf.o
   HOSTCC  scripts/kconfig/zconf.tab.o
   HOSTLD  scripts/kconfig/conf
