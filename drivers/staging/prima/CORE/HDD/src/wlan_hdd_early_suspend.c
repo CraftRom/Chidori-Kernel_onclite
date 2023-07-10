@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2018, 2021 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -906,8 +906,10 @@ void hdd_conf_ns_offload(hdd_adapter_t *pAdapter, int fenable)
                                                           SIR_IPV6_ADDR_VALID;
                     offLoadRequest.offloadType =  SIR_IPV6_NS_OFFLOAD;
                     offLoadRequest.enableOrDisable = SIR_OFFLOAD_ENABLE;
+#ifdef FEATURE_WLAN_DIAG_SUPPORT
                     hdd_wlan_offload_event(SIR_IPV6_NS_OFFLOAD,
                                                      SIR_OFFLOAD_ENABLE);
+#endif
 
                     hddLog (VOS_TRACE_LEVEL_INFO,
                        FL("configuredMcastBcastFilter: %d"
@@ -926,9 +928,11 @@ void hdd_conf_ns_offload(hdd_adapter_t *pAdapter, int fenable)
                         offLoadRequest.enableOrDisable =
                             SIR_OFFLOAD_NS_AND_MCAST_FILTER_ENABLE;
                     }
+#ifdef FEATURE_WLAN_DIAG_SUPPORT
                     hdd_wlan_offload_event(
                                   SIR_OFFLOAD_NS_AND_MCAST_FILTER_ENABLE,
                                   SIR_OFFLOAD_ENABLE);
+#endif
                     hddLog(VOS_TRACE_LEVEL_INFO,
                         FL("offload: NS filter programmed %d"),
                         offLoadRequest.enableOrDisable);
@@ -968,8 +972,10 @@ void hdd_conf_ns_offload(hdd_adapter_t *pAdapter, int fenable)
         vos_mem_zero((void *)&offLoadRequest, sizeof(tSirHostOffloadReq));
         offLoadRequest.enableOrDisable = SIR_OFFLOAD_DISABLE;
         offLoadRequest.offloadType =  SIR_IPV6_NS_OFFLOAD;
+#ifdef FEATURE_WLAN_DIAG_SUPPORT
         hdd_wlan_offload_event(SIR_IPV6_NS_OFFLOAD,
                                            SIR_OFFLOAD_DISABLE);
+#endif
 
         for (i = 0; i <  pAdapter->ns_slots; i++)
         {
@@ -1175,8 +1181,10 @@ VOS_STATUS hdd_conf_arp_offload(hdd_adapter_t *pAdapter, int fenable)
        {
            offLoadRequest.offloadType =  SIR_IPV4_ARP_REPLY_OFFLOAD;
            offLoadRequest.enableOrDisable = SIR_OFFLOAD_ENABLE;
+#ifdef FEATURE_WLAN_DIAG_SUPPORT
            hdd_wlan_offload_event(SIR_IPV4_ARP_REPLY_OFFLOAD,
                                            SIR_OFFLOAD_ENABLE);
+#endif
 
            hddLog(VOS_TRACE_LEVEL_INFO, "%s: Enabled", __func__);
 
@@ -1191,8 +1199,10 @@ VOS_STATUS hdd_conf_arp_offload(hdd_adapter_t *pAdapter, int fenable)
                hddLog(VOS_TRACE_LEVEL_INFO,
                       "offload: inside arp offload conditional check");
            }
+#ifdef FEATURE_WLAN_DIAG_SUPPORT
            hdd_wlan_offload_event(SIR_OFFLOAD_ARP_AND_BCAST_FILTER_ENABLE,
                                            SIR_OFFLOAD_ENABLE);
+#endif
 
            hddLog(VOS_TRACE_LEVEL_INFO, "offload: arp filter programmed = %d",
                   offLoadRequest.enableOrDisable);
@@ -1231,8 +1241,10 @@ VOS_STATUS hdd_conf_arp_offload(hdd_adapter_t *pAdapter, int fenable)
        vos_mem_zero((void *)&offLoadRequest, sizeof(tSirHostOffloadReq));
        offLoadRequest.enableOrDisable = SIR_OFFLOAD_DISABLE;
        offLoadRequest.offloadType =  SIR_IPV4_ARP_REPLY_OFFLOAD;
+#ifdef FEATURE_WLAN_DIAG_SUPPORT
        hdd_wlan_offload_event(SIR_IPV4_ARP_REPLY_OFFLOAD,
                                            SIR_OFFLOAD_DISABLE);
+#endif
        if (eHAL_STATUS_SUCCESS !=
                  sme_SetHostOffload(WLAN_HDD_GET_HAL_CTX(pAdapter),
                  pAdapter->sessionId, &offLoadRequest))
@@ -1503,7 +1515,7 @@ static void hdd_conf_suspend_ind(hdd_context_t* pHddCtx,
     hddLog(VOS_TRACE_LEVEL_INFO,
       "%s: send wlan suspend indication", __func__);
 
-    if((pHddCtx->cfg_ini->nEnableSuspend == WLAN_MAP_SUSPEND_TO_MCAST_BCAST_FILTER))
+    if(pHddCtx->cfg_ini->nEnableSuspend == WLAN_MAP_SUSPEND_TO_MCAST_BCAST_FILTER)
     {
         //Configure supported OffLoads
         hdd_conf_hostoffload(pAdapter, TRUE);
@@ -2146,17 +2158,20 @@ void hdd_set_wlan_suspend_mode(bool suspend)
     vos_ssr_unprotect(__func__);
 }
 
-static void hdd_ssr_timer_init(void)
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0))
+static void hdd_ssr_timer_cb(struct timer_list *data)
 {
-    init_timer(&ssr_timer);
+	hddLog(VOS_TRACE_LEVEL_FATAL, "%s: HDD SSR timer expired", __func__);
+
+#ifdef WCN_PRONTO
+	if (wcnss_hardware_type() == WCNSS_PRONTO_HW)
+		wcnss_pronto_log_debug_regs();
+#endif
+
+	VOS_BUG(0);
 }
 
-static void hdd_ssr_timer_del(void)
-{
-    del_timer(&ssr_timer);
-    ssr_timer_started = false;
-}
-
+#else
 static void hdd_ssr_timer_cb(unsigned long data)
 {
     hddLog(VOS_TRACE_LEVEL_FATAL, "%s: HDD SSR timer expired", __func__);
@@ -2167,6 +2182,26 @@ static void hdd_ssr_timer_cb(unsigned long data)
 #endif
 
     VOS_BUG(0);
+}
+#endif
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0))
+static void hdd_ssr_timer_init(void)
+{
+	timer_setup(&ssr_timer, hdd_ssr_timer_cb, 0);
+}
+
+#else
+static void hdd_ssr_timer_init(void)
+{
+	init_timer(&ssr_timer);
+}
+#endif
+
+static void hdd_ssr_timer_del(void)
+{
+    del_timer(&ssr_timer);
+    ssr_timer_started = false;
 }
 
 static void hdd_ssr_timer_start(int msec)
@@ -2874,6 +2909,8 @@ success:
 
    if (pHddCtx->cfg_ini->sap_internal_restart)
        hdd_ssr_restart_sap(pHddCtx);
+
+   wcnss_update_bt_profile();
 
    return VOS_STATUS_SUCCESS;
 }

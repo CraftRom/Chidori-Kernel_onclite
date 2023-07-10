@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2019 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2020 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -2110,6 +2110,11 @@ static __inline tANI_U32 defHddRateToDefCfgRate( tANI_U32 defRateIndex )
 #define CFG_ENABLE_RX_STBC_MAX                   ( 1 )
 #define CFG_ENABLE_RX_STBC_DEFAULT               ( 1 )
 
+#define CFG_ENABLE_TX_STBC                       "gEnableTXSTBC"
+#define CFG_ENABLE_TX_STBC_MIN                   ( 0 )
+#define CFG_ENABLE_TX_STBC_MAX                   ( 1 )
+#define CFG_ENABLE_TX_STBC_DEFAULT               ( 1 )
+
 /* 
  * Enable/Disable vsta based on MAX Assoc limit 
  * defined in WCNSS_qcom_cfg.ini.
@@ -3294,6 +3299,40 @@ This feature requires the dependent cfg.ini "gRoamPrefer5GHz" set to 1 */
 #define CFG_IS_SAE_ENABLED_MIN     (0)
 #define CFG_IS_SAE_ENABLED_MAX     (1)
 
+/*
+ * <ini>
+ * enable_sae_for_sap - Enable/Disable SAE support in driver for SAP
+ * @Min: 0
+ * @Max: 1
+ * @Default: 1
+ *
+ * This ini is used to enable/disable SAE support in driver for SAP mode
+ * Driver will process/drop the SAE authentication frames based on this config.
+ *
+ * Related: None
+ *
+ * Supported Feature: SAE
+ * Usage: External
+ *
+ * </ini>
+ */
+
+#define CFG_ENABLE_SAE_FOR_SAP_NAME    "enable_sae_for_sap"
+#define CFG_ENABLE_SAE_FOR_SAP_DEFAULT (1)
+#define CFG_ENABLE_SAE_FOR_SAP_MIN     (0)
+#define CFG_ENABLE_SAE_FOR_SAP_MAX     (1)
+
+#define CFG_SW_PTA_ENABLE_NAME         "sw_pta_enable"
+#define CFG_SW_PTA_ENABLE_DEFAULT      (0)
+#define CFG_SW_PTA_ENABLE_MIN          (0)
+#define CFG_SW_PTA_ENABLE_MAX          (1)
+
+/* Enable/disable periodic scan no candidate found */
+#define CFG_PERIODIC_ROAM_SCAN_ENABLED         "gPeriodicRoamScanEnabled"
+#define CFG_PERIODIC_ROAM_SCAN_ENABLED_MIN     (0)
+#define CFG_PERIODIC_ROAM_SCAN_ENABLED_MAX     (1)
+#define CFG_PERIODIC_ROAM_SCAN_ENABLED_DEFAULT (0)
+
 /*--------------------------------------------------------------------------- 
   Type declarations
   -------------------------------------------------------------------------*/ 
@@ -3667,6 +3706,7 @@ typedef struct
    v_U16_t                     configMccParam;
    v_U32_t                     numBuffAdvert;
    v_BOOL_t                    enableRxSTBC;
+   v_BOOL_t                    enableTxSTBC;
 #ifdef FEATURE_WLAN_TDLS       
    v_BOOL_t                    fEnableTDLSSupport;
    v_BOOL_t                    fEnableTDLSImplicitTrigger;
@@ -3912,10 +3952,15 @@ typedef struct
    char enabledefaultSAP[CFG_CONCURRENT_IFACE_MAX_LEN];
 #ifdef WLAN_FEATURE_SAE
    bool                        is_sae_enabled;
+   bool                        enable_sae_for_sap;
 #endif
 #ifdef FEATURE_WLAN_LFR
    uint8_t                     bssid_blacklist_timeout;
 #endif
+#ifdef FEATURE_WLAN_SW_PTA
+   bool                        is_sw_pta_enabled;
+#endif
+   bool                        isPeriodicRoamScanEnabled;
 } hdd_config_t;
 
 /*--------------------------------------------------------------------------- 

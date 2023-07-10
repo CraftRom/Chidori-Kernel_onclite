@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2019 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2020 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -2493,6 +2493,12 @@ REG_TABLE_ENTRY g_registry_table[] =
               CFG_ENABLE_RX_STBC_DEFAULT,
               CFG_ENABLE_RX_STBC_MIN,
               CFG_ENABLE_RX_STBC_MAX ),
+   REG_VARIABLE( CFG_ENABLE_TX_STBC, WLAN_PARAM_Integer,
+              hdd_config_t, enableTxSTBC,
+              VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+              CFG_ENABLE_TX_STBC_DEFAULT,
+              CFG_ENABLE_TX_STBC_MIN,
+              CFG_ENABLE_TX_STBC_MAX ),
 #ifdef FEATURE_WLAN_TDLS
    REG_VARIABLE( CFG_TDLS_SUPPORT_ENABLE, WLAN_PARAM_Integer,
               hdd_config_t, fEnableTDLSSupport,
@@ -4048,7 +4054,29 @@ REG_VARIABLE( CFG_EXTSCAN_ENABLE, WLAN_PARAM_Integer,
                CFG_IS_SAE_ENABLED_DEFAULT,
                CFG_IS_SAE_ENABLED_MIN,
                CFG_IS_SAE_ENABLED_MAX),
+
+  REG_VARIABLE(CFG_ENABLE_SAE_FOR_SAP_NAME, WLAN_PARAM_Integer,
+               hdd_config_t, enable_sae_for_sap,
+               VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+               CFG_ENABLE_SAE_FOR_SAP_DEFAULT,
+               CFG_ENABLE_SAE_FOR_SAP_MIN,
+               CFG_ENABLE_SAE_FOR_SAP_MAX),
 #endif
+
+#ifdef FEATURE_WLAN_SW_PTA
+  REG_VARIABLE(CFG_SW_PTA_ENABLE_NAME, WLAN_PARAM_Integer,
+               hdd_config_t, is_sw_pta_enabled,
+               VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+               CFG_SW_PTA_ENABLE_DEFAULT,
+               CFG_SW_PTA_ENABLE_MIN,
+               CFG_SW_PTA_ENABLE_MAX),
+#endif
+  REG_VARIABLE(CFG_PERIODIC_ROAM_SCAN_ENABLED, WLAN_PARAM_Integer,
+              hdd_config_t, isPeriodicRoamScanEnabled,
+              VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+              CFG_PERIODIC_ROAM_SCAN_ENABLED_DEFAULT,
+              CFG_PERIODIC_ROAM_SCAN_ENABLED_MIN,
+              CFG_PERIODIC_ROAM_SCAN_ENABLED_MAX)
 };
 
 /*
@@ -4108,8 +4136,8 @@ static char *i_trim(char *str)
 
    /* Find the first non white-space*/
    for (ptr = str; i_isspace(*ptr); ptr++);
-      if (*ptr == '\0')
-         return str;
+   if (*ptr == '\0')
+      return str;
 
    /* This is the new start of the string*/
    str = ptr;
@@ -4117,8 +4145,8 @@ static char *i_trim(char *str)
    /* Find the last non white-space */
    ptr += strlen(ptr) - 1;
    for (; ptr != str && i_isspace(*ptr); ptr--);
-      /* Null terminate the following character */
-      ptr[1] = '\0';
+   /* Null terminate the following character */
+   ptr[1] = '\0';
 
    return str;
 }
@@ -4271,8 +4299,32 @@ static void hdd_cfg_print_sae(hdd_context_t *hdd_ctx)
    hddLog(LOG2, "Name = [%s] value = [%u]", CFG_IS_SAE_ENABLED_NAME,
           hdd_ctx->cfg_ini->is_sae_enabled);
 }
+
+static void hdd_cfg_print_sae_sap(hdd_context_t *hdd_ctx)
+{
+   hddLog(LOG2, "Name = [%s] value = [%u]",
+          CFG_ENABLE_SAE_FOR_SAP_NAME,
+          hdd_ctx->cfg_ini->enable_sae_for_sap);
+}
 #else
 static void hdd_cfg_print_sae(hdd_context_t *hdd_ctx)
+{
+}
+
+static void hdd_cfg_print_sae_sap(hdd_context_t *hdd_ctx)
+{
+}
+#endif
+
+#ifdef FEATURE_WLAN_SW_PTA
+static void hdd_cfg_print_sw_pta(hdd_context_t* hdd_ctx)
+{
+   hddLog(LOG2, "Name = [%s] value = [%u]",
+          CFG_SW_PTA_ENABLE_NAME,
+          hdd_ctx->cfg_ini->is_sw_pta_enabled);
+}
+#else
+static void hdd_cfg_print_sw_pta(hdd_context_t* hdd_ctx)
 {
 }
 #endif
@@ -4737,7 +4789,12 @@ static void print_hdd_cfg(hdd_context_t *pHddCtx)
             "Name = [%s] Value = [%s] ",
             CFG_ENABLE_DEFAULT_SAP,
             pHddCtx->cfg_ini->enabledefaultSAP);
+    VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH,
+            "Name = [gPeriodicRoamScanEnabled] Value = [%u] ",
+            pHddCtx->cfg_ini->isPeriodicRoamScanEnabled);
     hdd_cfg_print_sae(pHddCtx);
+    hdd_cfg_print_sae_sap(pHddCtx);
+    hdd_cfg_print_sw_pta(pHddCtx);
 }
 
 
@@ -5649,6 +5706,10 @@ v_BOOL_t hdd_update_config_dat( hdd_context_t *pHddCtx )
 
     if (ccmCfgSetInt(pHddCtx->hHal, WNI_CFG_MCAST_BCAST_FILTER_SETTING, pConfig->mcastBcastFilterSetting,
                      NULL, eANI_BOOLEAN_FALSE)==eHAL_STATUS_FAILURE)
+     {
+        fStatus = FALSE;
+        hddLog(LOGE,"Failure: Could not pass on WNI_CFG_MCAST_BCAST_FILTER_SETTING configuration info to CCM");
+     }
 #endif
 
      if (ccmCfgSetInt(pHddCtx->hHal, WNI_CFG_SINGLE_TID_RC, pConfig->bSingleTidRc,
@@ -5884,6 +5945,14 @@ v_BOOL_t hdd_update_config_dat( hdd_context_t *pHddCtx )
      {
          fStatus = FALSE;
          hddLog(LOGE, "Could not pass on WNI_CFG_VHT_RXSTBC to CCM");
+     }
+
+     if (ccmCfgSetInt(pHddCtx->hHal, WNI_CFG_VHT_TXSTBC,
+                     pConfig->enableTxSTBC, NULL, eANI_BOOLEAN_FALSE)
+         == eHAL_STATUS_FAILURE)
+     {
+         fStatus = FALSE;
+         hddLog(LOGE, "Could not pass on WNI_CFG_VHT_TXSTBC to CCM");
      }
 
 #ifdef WLAN_SOFTAP_VSTA_FEATURE
@@ -6792,6 +6861,8 @@ VOS_STATUS hdd_set_sme_config( hdd_context_t *pHddCtx )
                         pHddCtx->cfg_ini->edca_bk_aifs;
    smeConfig->csrConfig.edca_be_aifs =
                         pHddCtx->cfg_ini->edca_be_aifs;
+   smeConfig->csrConfig.isPeriodicRoamScanEnabled =
+                        pHddCtx->cfg_ini->isPeriodicRoamScanEnabled;
 
    smeConfig->csrConfig.sta_auth_retries_for_code17 =
                         pHddCtx->cfg_ini->sta_auth_retries_for_code17;

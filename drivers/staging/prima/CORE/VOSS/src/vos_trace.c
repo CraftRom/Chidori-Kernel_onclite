@@ -69,7 +69,7 @@
 #define VOS_TRACE_BUFFER_SIZE ( 512 )
 
 // macro to map vos trace levels into the bitmask
-#define VOS_TRACE_LEVEL_TO_MODULE_BITMASK( _level ) ( ( 1 << (_level) ) )
+#define VOS_TRACE_LEVEL_TO_MODULE_BITMASK( _level ) VOS_TRACE_LEVEL_NONE
 
 typedef struct
 {
@@ -88,8 +88,7 @@ typedef struct
 
 } moduleTraceInfo;
 
-#define VOS_DEFAULT_TRACE_LEVEL \
-   ((1<<VOS_TRACE_LEVEL_FATAL)|(1<<VOS_TRACE_LEVEL_ERROR))
+#define VOS_DEFAULT_TRACE_LEVEL VOS_TRACE_LEVEL_NONE
 
 // Array of static data that contains all of the per module trace
 // information.  This includes the trace level for the module and
@@ -436,7 +435,7 @@ void vosTraceEnable(v_U32_t bitmask_of_moduleId, v_U8_t enable)
   Called immediately after vos_preopen, so that we can start recording HDD
   events ASAP.
   ----------------------------------------------------------------------------*/
-void vosTraceInit()
+void vosTraceInit(void)
 {
     v_U8_t i;
     gvosTraceData.head = INVALID_VOS_TRACE_ADDR;
@@ -453,7 +452,7 @@ void vosTraceInit()
     }
 }
 
-void vos_register_debugcb_init()
+void vos_register_debugcb_init(void)
 {
     v_U8_t i;
 
@@ -545,7 +544,7 @@ void vos_trace(v_U8_t module, v_U8_t code, v_U8_t session, v_U32_t data)
   This function will be called from vos_preOpen, we will have lock available
   to use ASAP.
   ----------------------------------------------------------------------------*/
-VOS_STATUS vos_trace_spin_lock_init()
+VOS_STATUS vos_trace_spin_lock_init(void)
 {
     spin_lock_init(&ltraceLock);
 
@@ -692,7 +691,7 @@ void vos_register_debug_callback(VOS_MODULE_ID moduleID,
  * its callback to print its state information.
  * @cb_context: call back context to be passed
  */
-void vos_state_info_dump_all()
+void vos_state_info_dump_all(void)
 {
     v_U8_t module;
 

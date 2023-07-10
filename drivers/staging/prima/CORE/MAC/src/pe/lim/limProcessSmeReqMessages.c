@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2019 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2020 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -191,7 +191,7 @@ __limFreshScanReqd(tpAniSirGlobal pMac, tANI_U8 returnFreshResults)
    if( (validState) && (returnFreshResults & SIR_BG_SCAN_RETURN_FRESH_RESULTS))
     return TRUE;
 
-    return FALSE;
+   return FALSE;
 }
 
 
@@ -3899,7 +3899,7 @@ __limHandleSmeStopBssRequest(tpAniSirGlobal pMac, tANI_U32 *pMsgBuf)
        )
     {
         tSirMacAddr   bcAddr = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-        if ((stopBssReq.reasonCode == eSIR_SME_MIC_COUNTER_MEASURES))
+        if (stopBssReq.reasonCode == eSIR_SME_MIC_COUNTER_MEASURES)
             // Send disassoc all stations associated thru TKIP
             __limCounterMeasures(pMac,psessionEntry);
         else
@@ -4000,7 +4000,7 @@ void limProcessSmeDelBssRsp(
   void
 __limProcessSmeAssocCnfNew(tpAniSirGlobal pMac, tANI_U32 msgType, tANI_U32 *pMsgBuf)
 {
-    tSirSmeAssocCnf    assocCnf;
+    tSirSmeAssocCnf    assocCnf = {0};
     tpDphHashNode      pStaDs = NULL;
     tpPESession        psessionEntry= NULL;
     tANI_U8            sessionId; 
@@ -4093,17 +4093,31 @@ __limProcessSmeAssocCnfNew(tpAniSirGlobal pMac, tANI_U32 msgType, tANI_U32 *pMsg
     } // (assocCnf.statusCode == eSIR_SME_SUCCESS)
     else
     {
+        tSirMacStatusCodes mac_status_code = eSIR_MAC_UNSPEC_FAILURE_STATUS;
+        uint8_t add_pre_auth_context = true;
+
         // SME_ASSOC_CNF status is non-success, so STA is not allowed to be associated
         /*Since the HAL sta entry is created for denied STA we need to remove this HAL entry.So to do that set updateContext to 1*/
         if(!pStaDs->mlmStaContext.updateContext)
            pStaDs->mlmStaContext.updateContext = 1;
-        limLog(pMac, LOG1, FL("Receive Assoc Cnf with status Code : %d(assoc id=%d) "),
-                           assocCnf.statusCode, pStaDs->assocId);
+
+        limLog(pMac, LOG1,
+                FL("Receive Assoc Cnf with status Code : %d(assoc id=%d) Reason code: %d"),
+                assocCnf.statusCode, pStaDs->assocId, assocCnf.mac_status_code);
+        if (assocCnf.mac_status_code)
+            mac_status_code = assocCnf.mac_status_code;
+
+        if (assocCnf.mac_status_code == eSIR_MAC_INVALID_PMKID ||
+            assocCnf.mac_status_code ==
+            eSIR_MAC_AUTH_ALGO_NOT_SUPPORTED_STATUS)
+            add_pre_auth_context = false;
+
         limRejectAssociation(pMac, pStaDs->staAddr,
                              pStaDs->mlmStaContext.subType,
-                             true, pStaDs->mlmStaContext.authType,
+                             add_pre_auth_context,
+                             pStaDs->mlmStaContext.authType,
                              pStaDs->assocId, true,
-                             eSIR_MAC_UNSPEC_FAILURE_STATUS, psessionEntry);
+                             mac_status_code, psessionEntry);
     }
 
 end:
@@ -5842,7 +5856,7 @@ static void lim_process_sme_channel_change_request(tpAniSirGlobal mac_ctx,
    max_tx_pwr = cfgGetRegulatoryMaxTransmitPower(mac_ctx,
                      ch_change_req->new_chan);
 
-   if ((max_tx_pwr == WDA_MAX_TXPOWER_INVALID)) {
+   if (max_tx_pwr == WDA_MAX_TXPOWER_INVALID) {
        limLog(mac_ctx, LOGE, FL("Invalid Request/max_tx_pwr"));
        return;
    }

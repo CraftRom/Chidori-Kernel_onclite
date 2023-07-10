@@ -312,7 +312,7 @@ tpPESession pe_find_session_by_sme_session_id(tpAniSirGlobal mac_ctx,
         limLog(pMac, LOGE, FL("Invalid sessionId: %d "), sessionId);
         return(NULL);
     }
-    if((pMac->lim.gpSession[sessionId].valid == TRUE))
+    if(pMac->lim.gpSession[sessionId].valid == TRUE)
     {
         return(&pMac->lim.gpSession[sessionId]);
     }
@@ -382,6 +382,11 @@ void peDeleteSession(tpAniSirGlobal pMac, tpPESession psessionEntry)
            " BSSID: " MAC_ADDRESS_STR), psessionEntry->peSessionId,
            psessionEntry->operMode, psessionEntry->bssIdx,
            MAC_ADDR_ARRAY(psessionEntry->bssId));
+
+    if (psessionEntry->gLimSpecMgmt.dfs_channel_csa) {
+        limFrameTransmissionControl(pMac, eLIM_TX_ALL, eLIM_RESUME_TX);
+       psessionEntry->gLimSpecMgmt.dfs_channel_csa = false;
+    }
 
     for (n = 0; n < pMac->lim.maxStation; n++)
     {

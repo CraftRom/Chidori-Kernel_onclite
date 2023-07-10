@@ -526,6 +526,8 @@ typedef struct
    wpt_uint8  mgmtTxfailureCnt;
    uint8_t  mgmt_pktfree_fail;
    vos_lock_t mgmt_pkt_lock;
+   /* completion variable for ADD BA Responce Delay */
+   struct completion addBa_responce_delay;
 
 } tWDA_CbContext ; 
 
@@ -1243,6 +1245,10 @@ tSirRetStatus uMacPostCtrlMsg(void* pSirGlobal, tSirMbMsg* pMb);
 #define WDA_NAN_REQUEST            SIR_HAL_NAN_REQUEST
 
 #define WDA_BLACKLIST_REQ          SIR_HAL_BLACKLIST_REQ
+
+#ifdef FEATURE_WLAN_SW_PTA
+#define WDA_SW_PTA_REQ             SIR_HAL_SW_PTA_REQ
+#endif
 
 #define WDA_START_SCAN_OFFLOAD_REQ  SIR_HAL_START_SCAN_OFFLOAD_REQ
 #define WDA_START_SCAN_OFFLOAD_RSP  SIR_HAL_START_SCAN_OFFLOAD_RSP
